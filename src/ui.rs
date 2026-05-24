@@ -5,7 +5,7 @@ use image::RgbaImage;
 use std::sync::{Arc, Mutex};
 
 /// Runs the full-screen sniper overlay.
-/// Returns the selected region, or `None` if cancelled.
+/// Returns the selected region in physical pixels, or `None` if cancelled.
 pub fn run_sniper_overlay(background: RgbaImage) -> Option<Rect> {
     let result = Arc::new(Mutex::new(None));
     let result_clone = result.clone();
@@ -14,23 +14,19 @@ pub fn run_sniper_overlay(background: RgbaImage) -> Option<Rect> {
         viewport: egui::ViewportBuilder::default()
             .with_fullscreen(true)
             .with_decorations(false)
-            .with_transparent(true),
+            .with_transparent(true)
+            .with_always_on_top(),
         ..Default::default()
     };
 
-    // Pass the background image data but lazily build the texture inside the creation context 'cc'
     let mut background_data = Some(background);
 
     eframe::run_native(
         "rgrim-sniper",
         native_options,
         Box::new(move |cc| {
-            // Force 1:1 scaling BEFORE eframe performs window sizing and bounding loops
-            cc.egui_ctx.set_pixels_per_point(1.0);
-
             let raw_img = background_data.take().expect("App state consumed twice");
             let app = SniperOverlay::new(&cc.egui_ctx, raw_img, result_clone);
-
             Ok(Box::new(app))
         }),
     )
@@ -41,26 +37,31 @@ pub fn run_sniper_overlay(background: RgbaImage) -> Option<Rect> {
 
 struct SniperOverlay {
     texture: TextureHandle,
+    result: Arc<Mutex<Option<Rect>>>,
     selection_start: Option<Pos2>,
     selection_end: Option<Pos2>,
-    result: Arc<Mutex<Option<Rect>>>,
+    image_width: f32,
+    image_height: f32,
 }
 
 impl SniperOverlay {
-    fn new(ctx: &egui::Context, img: RgbaImage, result: Arc<Mutex<Option<Rect>>>) -> Self {
-        let w = img.width() as usize;
-        let h = img.height() as usize;
-        let pixels = img.into_raw();
-        let color_image = ColorImage::from_rgba_unmultiplied([w, h], &pixels);
+    pub fn new(ctx: &egui::Context, img: RgbaImage, result: Arc<Mutex<Option<Rect>>>) -> Self {
+        let w = img.width() as f32;
+        let h = img.height() as f32;
 
-        // Cache the texture allocation on initialize to stop high GPU thrashing loops
-        let texture = ctx.load_texture("screenshot", color_image, TextureOptions::default());
+        let w_usize = img.width() as usize;
+        let h_usize = img.height() as usize;
+        let pixels = img.into_raw();
+        let color_image = ColorImage::from_rgba_unmultiplied([w_usize, h_usize], &pixels);
+        let texture = ctx.load_texture("background_image", color_image, TextureOptions::default());
 
         Self {
             texture,
+            result,
             selection_start: None,
             selection_end: None,
-            result,
+            image_width: w,
+            image_height: h,
         }
     }
 }
@@ -70,34 +71,25 @@ impl eframe::App for SniperOverlay {
 
     #[allow(deprecated)]
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        ctx.set_pixels_per_point(1.0);
-
         if ctx.input(|i| i.key_pressed(egui::Key::Escape) || i.key_pressed(egui::Key::Q)) {
             *self.result.lock().unwrap() = None;
             ctx.send_viewport_cmd(egui::ViewportCommand::Close);
             return;
         }
 
-        let viewport_rect = ctx.viewport_rect();
-
-        if ctx.input(|i| i.key_pressed(egui::Key::Enter)) {
-            *self.result.lock().unwrap() = Some(viewport_rect);
-            ctx.send_viewport_cmd(egui::ViewportCommand::Close);
-        }
-
         egui::CentralPanel::default()
-            .frame(egui::Frame::NONE)
+            .frame(egui::Frame::none())
             .show(ctx, |ui| {
-                // Use cached texture handle cleanly
+                let content_rect = ui.available_rect_before_wrap();
+
                 ui.painter().image(
                     self.texture.id(),
-                    viewport_rect,
+                    content_rect,
                     Rect::from_min_max(Pos2::ZERO, Pos2::new(1.0, 1.0)),
                     egui::Color32::WHITE,
                 );
 
-                let response =
-                    ui.interact(viewport_rect, ui.next_auto_id(), Sense::click_and_drag());
+                let response = ui.interact(content_rect, ui.next_auto_id(), Sense::click_and_drag());
 
                 if response.drag_started() {
                     self.selection_start = response.interact_pointer_pos();
@@ -114,10 +106,18 @@ impl eframe::App for SniperOverlay {
                         let mut rect = Rect::from_two_pos(start, end);
 
                         if rect.area() <= 1.0 {
-                            rect = viewport_rect;
+                            rect = content_rect;
                         }
 
-                        *self.result.lock().unwrap() = Some(rect);
+                        let scale_x = self.image_width / content_rect.width();
+                        let scale_y = self.image_height / content_rect.height();
+
+                        let physical_rect = Rect::from_min_max(
+                            Pos2::new(rect.min.x * scale_x, rect.min.y * scale_y),
+                            Pos2::new(rect.max.x * scale_x, rect.max.y * scale_y),
+                        );
+
+                        *self.result.lock().unwrap() = Some(physical_rect);
                     }
                     ctx.send_viewport_cmd(egui::ViewportCommand::Close);
                 }
