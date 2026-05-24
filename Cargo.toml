@@ -6,6 +6,8 @@ edition = "2024"
 [dependencies]
 anyhow = "1.0.102"
 arboard = "3.6.1"
+chrono = "0.4.44"
+dirs = "6.0.0"
 eframe = "0.34.2"
 image = "0.25.10"
 xcap = "0.9.6"
