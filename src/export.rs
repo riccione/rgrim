@@ -9,12 +9,27 @@ pub fn get_screenshot_directory() -> PathBuf {
         return PathBuf::from(env_path);
     }
 
-    if let Some(mut home_dir) = dirs::picture_dir() {
-        home_dir.push("Screenshots");
-        return home_dir;
+    let candidates: [PathBuf; 3] = [
+        // Standard: ~/Pictures/Screenshots
+        dirs::home_dir()
+            .map(|p| p.join("Pictures").join("Screenshots"))
+            .unwrap_or_default(),
+        // XDG-reported picture dir + Screenshots
+        dirs::picture_dir()
+            .map(|p| p.join("Screenshots"))
+            .unwrap_or_default(),
+        // Local workspace fallback
+        PathBuf::from("screenshots"),
+    ];
+
+    for path in &candidates {
+        if path.exists() {
+            return path.clone();
+        }
     }
 
-    PathBuf::from("screenshots")
+    // None exist yet — use the preferred location
+    candidates[0].clone()
 }
 
 /// Generates a filename: `screenshot_YYYY-MM-DD_HH-MM-SS.png`
