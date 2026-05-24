@@ -70,6 +70,10 @@ pub struct EditorApp {
 
 impl EditorApp {
     pub fn new(ctx: &egui::Context, img: RgbaImage, status_msg: Option<String>) -> Self {
+        let mut visuals = egui::Visuals::dark();
+        visuals.window_corner_radius = egui::CornerRadius::from(8);
+        ctx.set_visuals(visuals);
+
         let original = img.clone();
         let w = img.width() as usize;
         let h = img.height() as usize;
@@ -112,51 +116,73 @@ impl eframe::App for EditorApp {
             }
         }
 
-        egui::TopBottomPanel::top("toolbar").show(ctx, |ui| {
-            ui.horizontal(|ui| {
-                if ui
-                    .selectable_label(self.active_tool == Tool::Pen, "Pen")
-                    .clicked()
-                {
-                    self.active_tool = if self.active_tool == Tool::Pen {
-                        Tool::None
-                    } else {
-                        Tool::Pen
-                    };
-                }
-                if ui
-                    .selectable_label(self.active_tool == Tool::Highlighter, "Highlighter")
-                    .clicked()
-                {
-                    self.active_tool = if self.active_tool == Tool::Highlighter {
-                        Tool::None
-                    } else {
-                        Tool::Highlighter
-                    };
-                }
-                if ui.button("Clear").clicked() {
-                    self.strokes.clear();
-                    self.current_stroke = None;
-                }
-                if ui.button("Copy").clicked() {
-                    let baked = self.bake_and_export();
-                    match copy_to_clipboard(&baked) {
-                        Ok(()) => self.set_status(ctx, "Copied to clipboard!".into()),
-                        Err(e) => self.set_status(ctx, format!("Copy failed: {}", e)),
+        egui::TopBottomPanel::top("toolbar")
+            .frame(
+                egui::Frame::none()
+                    .inner_margin(8.0)
+                    .fill(ctx.style().visuals.window_fill()),
+            )
+            .show(ctx, |ui| {
+                ui.horizontal(|ui| {
+                    ui.add_space(4.0);
+
+                    let pen_btn = ui.add_sized(
+                        [60.0, 28.0],
+                        egui::SelectableLabel::new(self.active_tool == Tool::Pen, "Pen"),
+                    );
+                    if pen_btn.clicked() {
+                        self.active_tool = if self.active_tool == Tool::Pen {
+                            Tool::None
+                        } else {
+                            Tool::Pen
+                        };
                     }
-                }
-                if ui.button("Save").clicked() {
-                    let baked = self.bake_and_export();
-                    match save_to_file(&baked) {
-                        Ok(path) => self.set_status(ctx, format!("Saved to {}", path)),
-                        Err(e) => self.set_status(ctx, format!("Save failed: {}", e)),
+
+                    let hl_btn = ui.add_sized(
+                        [86.0, 28.0],
+                        egui::SelectableLabel::new(
+                            self.active_tool == Tool::Highlighter,
+                            "Highlighter",
+                        ),
+                    );
+                    if hl_btn.clicked() {
+                        self.active_tool = if self.active_tool == Tool::Highlighter {
+                            Tool::None
+                        } else {
+                            Tool::Highlighter
+                        };
                     }
-                }
+
+                    let clear_btn = ui.add_sized([60.0, 28.0], egui::Button::new("Clear"));
+                    if clear_btn.clicked() {
+                        self.strokes.clear();
+                        self.current_stroke = None;
+                    }
+
+                    ui.separator();
+
+                    let copy_btn = ui.add_sized([65.0, 28.0], egui::Button::new("Copy"));
+                    if copy_btn.clicked() {
+                        let baked = self.bake_and_export();
+                        match copy_to_clipboard(&baked) {
+                            Ok(()) => self.set_status(ctx, "Copied to clipboard!".into()),
+                            Err(e) => self.set_status(ctx, format!("Copy failed: {}", e)),
+                        }
+                    }
+
+                    let save_btn = ui.add_sized([65.0, 28.0], egui::Button::new("Save"));
+                    if save_btn.clicked() {
+                        let baked = self.bake_and_export();
+                        match save_to_file(&baked) {
+                            Ok(path) => self.set_status(ctx, format!("Saved to {}", path)),
+                            Err(e) => self.set_status(ctx, format!("Save failed: {}", e)),
+                        }
+                    }
+                });
             });
-        });
 
         egui::CentralPanel::default()
-            .frame(egui::Frame::dark_canvas(&ctx.style()))
+            .frame(egui::Frame::none().fill(egui::Color32::from_rgb(20, 20, 22)))
             .show(ctx, |ui| {
                 let available = ui.available_size();
                 let img_size = self.texture.size_vec2();
@@ -226,11 +252,23 @@ impl eframe::App for EditorApp {
                 }
             });
 
-        egui::TopBottomPanel::bottom("status_bar").show(ctx, |ui| {
-            if let Some(msg) = &self.status_message {
-                ui.label(msg);
-            }
-        });
+        if let Some(msg) = &self.status_message {
+            egui::TopBottomPanel::bottom("status_bar")
+                .frame(
+                    egui::Frame::none()
+                        .inner_margin(6.0)
+                        .fill(egui::Color32::from_rgb(0, 120, 255)),
+                )
+                .show(ctx, |ui| {
+                    ui.centered_and_justified(|ui| {
+                        ui.label(
+                            egui::RichText::new(msg)
+                                .color(egui::Color32::WHITE)
+                                .strong(),
+                        );
+                    });
+                });
+        }
     }
 }
 
