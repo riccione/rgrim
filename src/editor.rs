@@ -1,6 +1,9 @@
+use std::io::Write;
 use std::path::Path;
+use std::process::{Command, Stdio};
 
 use eframe::egui::{self, ColorImage, Pos2, Rect, Sense, TextureHandle, TextureOptions, Vec2};
+use image::ImageEncoder;
 use image::RgbaImage;
 use image::imageops;
 
@@ -24,8 +27,7 @@ pub fn crop_image(image: &RgbaImage, region: &Rect) -> RgbaImage {
 /// Runs the main editor window with toolbar and central canvas.
 pub fn run_editor(image: RgbaImage) -> anyhow::Result<()> {
     let native_options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default()
-            .with_inner_size(Vec2::new(960.0, 720.0)),
+        viewport: egui::ViewportBuilder::default().with_inner_size(Vec2::new(960.0, 720.0)),
         ..Default::default()
     };
 
@@ -96,8 +98,7 @@ impl EditorApp {
 }
 
 impl eframe::App for EditorApp {
-    fn ui(&mut self, _ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
-    }
+    fn ui(&mut self, _ui: &mut egui::Ui, _frame: &mut eframe::Frame) {}
 
     #[allow(deprecated)]
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
@@ -110,11 +111,25 @@ impl eframe::App for EditorApp {
 
         egui::TopBottomPanel::top("toolbar").show(ctx, |ui| {
             ui.horizontal(|ui| {
-                if ui.selectable_label(self.active_tool == Tool::Pen, "Pen").clicked() {
-                    self.active_tool = if self.active_tool == Tool::Pen { Tool::None } else { Tool::Pen };
+                if ui
+                    .selectable_label(self.active_tool == Tool::Pen, "Pen")
+                    .clicked()
+                {
+                    self.active_tool = if self.active_tool == Tool::Pen {
+                        Tool::None
+                    } else {
+                        Tool::Pen
+                    };
                 }
-                if ui.selectable_label(self.active_tool == Tool::Highlighter, "Highlighter").clicked() {
-                    self.active_tool = if self.active_tool == Tool::Highlighter { Tool::None } else { Tool::Highlighter };
+                if ui
+                    .selectable_label(self.active_tool == Tool::Highlighter, "Highlighter")
+                    .clicked()
+                {
+                    self.active_tool = if self.active_tool == Tool::Highlighter {
+                        Tool::None
+                    } else {
+                        Tool::Highlighter
+                    };
                 }
                 if ui.button("Clear").clicked() {
                     self.strokes.clear();
@@ -142,7 +157,9 @@ impl eframe::App for EditorApp {
             .show(ctx, |ui| {
                 let available = ui.available_size();
                 let img_size = self.texture.size_vec2();
-                let scale = (available.x / img_size.x).min(available.y / img_size.y).min(1.0);
+                let scale = (available.x / img_size.x)
+                    .min(available.y / img_size.y)
+                    .min(1.0);
                 let scaled = img_size * scale;
                 let image_rect = Rect::from_center_size(ui.clip_rect().center(), scaled);
 
@@ -161,7 +178,8 @@ impl eframe::App for EditorApp {
                 }
 
                 if self.active_tool != Tool::None {
-                    let response = ui.interact(image_rect, ui.next_auto_id(), Sense::click_and_drag());
+                    let response =
+                        ui.interact(image_rect, ui.next_auto_id(), Sense::click_and_drag());
 
                     if response.drag_started() {
                         if let Some(pos) = response.interact_pointer_pos() {
@@ -169,7 +187,9 @@ impl eframe::App for EditorApp {
                             self.current_stroke = Some(Stroke {
                                 points: vec![normalized],
                                 color: match self.active_tool {
-                                    Tool::Highlighter => egui::Color32::from_rgba_premultiplied(255, 255, 0, 80),
+                                    Tool::Highlighter => {
+                                        egui::Color32::from_rgba_premultiplied(255, 255, 0, 80)
+                                    }
                                     Tool::Pen => egui::Color32::RED,
                                     _ => unreachable!(),
                                 },
@@ -192,7 +212,8 @@ impl eframe::App for EditorApp {
                     }
 
                     let was_dragging = self.current_stroke.is_some();
-                    if was_dragging && !response.dragged() && !response.is_pointer_button_down_on() {
+                    if was_dragging && !response.dragged() && !response.is_pointer_button_down_on()
+                    {
                         if let Some(stroke) = self.current_stroke.take() {
                             if !stroke.points.is_empty() {
                                 self.strokes.push(stroke);
@@ -339,7 +360,7 @@ fn blend_pixel(pixel: &mut image::Rgba<u8>, color: egui::Color32) {
 fn copy_to_clipboard(image: &RgbaImage) -> anyhow::Result<()> {
     let w = image.width() as usize;
     let h = image.height() as usize;
-    let bytes = image.as_raw().clone();
+    let bytes = image.as_raw().to_vec();
 
     let img_data = arboard::ImageData {
         width: w,
@@ -347,8 +368,47 @@ fn copy_to_clipboard(image: &RgbaImage) -> anyhow::Result<()> {
         bytes: std::borrow::Cow::Owned(bytes),
     };
 
-    let mut clipboard = arboard::Clipboard::new()?;
-    clipboard.set_image(img_data)?;
+    // Attempt 1: Try native arboard handler
+    let clipboard = arboard::Clipboard::new();
+    if let Ok(mut cb) = clipboard {
+        if cb.set_image(img_data).is_ok() {
+            return Ok(());
+        }
+    }
+
+    // Attempt 2: Fallback explicitly tailored for Sway/Wayland via wl-copy
+    let mut png_bytes: Vec<u8> = Vec::new();
+    let mut cursor = std::io::Cursor::new(&mut png_bytes);
+    image::codecs::png::PngEncoder::new(&mut cursor)
+        .write_image(
+            image.as_raw(),
+            w as u32,
+            h as u32,
+            image::ExtendedColorType::Rgba8,
+        )
+        .map_err(|e| anyhow::anyhow!("Failed to encode clipboard buffer to PNG: {}", e))?;
+
+    let mut child = Command::new("wl-copy")
+        .arg("--type")
+        .arg("image/png")
+        .stdin(Stdio::piped())
+        .spawn()
+        .map_err(|e| {
+            anyhow::anyhow!(
+                "Both arboard and 'wl-copy' failed. If on a pure Wayland compositor, ensure 'wl-clipboard' is installed: {}",
+                e
+            )
+        })?;
+
+    if let Some(mut stdin) = child.stdin.take() {
+        stdin.write_all(&png_bytes)?;
+    }
+
+    let wl_status = child.wait()?;
+    if !wl_status.success() {
+        return Err(anyhow::anyhow!("wl-copy exited with an error status code"));
+    }
+
     Ok(())
 }
 
