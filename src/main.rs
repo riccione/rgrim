@@ -7,15 +7,19 @@ use rgrim::ui::run_sniper_overlay;
 
 fn main() -> Result<()> {
     let captured = capture_primary_monitor()?;
+
+    // Need for debugging only
+    /*
     println!(
         "Captured '{}' ({}x{})",
         captured.name, captured.width, captured.height
     );
+    */
 
     let rect = run_sniper_overlay(captured.image.clone());
 
     if let Some(region) = rect {
-        println!("Selected region: min={:?} max={:?}", region.min, region.max);
+        // println!("Selected region: min={:?} max={:?}", region.min, region.max);
         let cropped = crop_image(&captured.image, &region);
 
         let save_dir = get_screenshot_directory();
@@ -26,7 +30,7 @@ fn main() -> Result<()> {
                 match cropped.save(&full_path) {
                     Ok(()) => {
                         let msg = format!("Screenshot saved to {}", full_path.display());
-                        println!("{}", msg);
+                        // println!("{}", msg);
                         Some(msg)
                     }
                     Err(e) => {
