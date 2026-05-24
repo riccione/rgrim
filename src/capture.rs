@@ -4,8 +4,6 @@ use xcap::Monitor;
 
 pub struct CapturedScreen {
     pub name: String,
-    pub width: u32,
-    pub height: u32,
     pub image: RgbaImage,
 }
 
@@ -19,8 +17,6 @@ pub fn capture_primary_monitor() -> Result<CapturedScreen> {
         .ok_or_else(|| anyhow!("No monitors detected on the system"))?;
 
     let monitor_name = primary.name()?;
-    let width = primary.width()?;
-    let height = primary.height()?;
 
     let xcap_image = primary.capture_image().map_err(|e| {
         anyhow!(
@@ -39,8 +35,6 @@ pub fn capture_primary_monitor() -> Result<CapturedScreen> {
 
     Ok(CapturedScreen {
         name: monitor_name,
-        width,
-        height,
         image: rgba_buffer,
     })
 }

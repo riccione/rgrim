@@ -8,14 +8,6 @@ use rgrim::ui::run_sniper_overlay;
 fn main() -> Result<()> {
     let captured = capture_primary_monitor()?;
 
-    // Need for debugging only
-    /*
-    println!(
-        "Captured '{}' ({}x{})",
-        captured.name, captured.width, captured.height
-    );
-    */
-
     let rect = run_sniper_overlay(captured.image.clone());
 
     if let Some(region) = rect {
