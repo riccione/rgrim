@@ -82,6 +82,15 @@ impl eframe::App for SniperOverlay {
             .show(ctx, |ui| {
                 let content_rect = ui.available_rect_before_wrap();
 
+                if ctx.input(|i| i.key_pressed(egui::Key::Enter)) {
+                    *self.result.lock().unwrap() = Some(Rect::from_min_max(
+                        Pos2::new(0.0, 0.0),
+                        Pos2::new(self.image_width, self.image_height),
+                    ));
+                    ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                    return;
+                }
+
                 ui.painter().image(
                     self.texture.id(),
                     content_rect,
