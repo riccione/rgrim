@@ -33,7 +33,7 @@ pub fn capture_primary_monitor() -> Result<CapturedScreen> {
     // Convert xcap's image wrapper into a standard image::DynamicImage
     // This automatically corrects pixel formats, padding, and row strides.
     let dynamic_img: DynamicImage = xcap_image.into();
-    
+
     // Safely extract a perfectly aligned RgbaImage buffer
     let rgba_buffer = dynamic_img.to_rgba8();
 
