@@ -69,10 +69,14 @@ impl eframe::App for SniperOverlay {
 
     #[allow(deprecated)]
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        // Guarantee alignment stays locked on every refresh phase
         ctx.set_pixels_per_point(1.0);
 
         let viewport_rect = ctx.viewport_rect();
+
+        if ctx.input(|i| i.key_pressed(egui::Key::Enter)) {
+            *self.result.lock().unwrap() = Some(viewport_rect);
+            ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+        }
 
         egui::CentralPanel::default().frame(egui::Frame::NONE).show(ctx, |ui| {
             // Use cached texture handle cleanly
@@ -97,10 +101,13 @@ impl eframe::App for SniperOverlay {
             let was_dragging = self.selection_start.is_some();
             if was_dragging && !response.dragged() && !response.is_pointer_button_down_on() {
                 if let (Some(start), Some(end)) = (self.selection_start, self.selection_end) {
-                    let rect = Rect::from_two_pos(start, end);
-                    if rect.area() > 0.0 {
-                        *self.result.lock().unwrap() = Some(rect);
+                    let mut rect = Rect::from_two_pos(start, end);
+
+                    if rect.area() <= 1.0 {
+                        rect = viewport_rect;
                     }
+
+                    *self.result.lock().unwrap() = Some(rect);
                 }
                 ctx.send_viewport_cmd(egui::ViewportCommand::Close);
             }
