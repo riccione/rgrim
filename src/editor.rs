@@ -1,5 +1,4 @@
 use std::io::Write;
-use std::path::Path;
 use std::process::{Command, Stdio};
 
 use eframe::egui::{self, ColorImage, Pos2, Rect, Sense, TextureHandle, TextureOptions, Vec2};
@@ -25,7 +24,8 @@ pub fn crop_image(image: &RgbaImage, region: &Rect) -> RgbaImage {
 }
 
 /// Runs the main editor window with toolbar and central canvas.
-pub fn run_editor(image: RgbaImage) -> anyhow::Result<()> {
+/// `auto_save_msg` is shown in the status bar on launch if set.
+pub fn run_editor(image: RgbaImage, auto_save_msg: Option<String>) -> anyhow::Result<()> {
     let native_options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default().with_inner_size(Vec2::new(960.0, 720.0)),
         ..Default::default()
@@ -38,7 +38,7 @@ pub fn run_editor(image: RgbaImage) -> anyhow::Result<()> {
         native_options,
         Box::new(move |cc| {
             let img = image_data.take().expect("App state consumed twice");
-            Ok(Box::new(EditorApp::new(&cc.egui_ctx, img)))
+            Ok(Box::new(EditorApp::new(&cc.egui_ctx, img, auto_save_msg)))
         }),
     )?;
 
@@ -69,21 +69,24 @@ pub struct EditorApp {
 }
 
 impl EditorApp {
-    pub fn new(ctx: &egui::Context, img: RgbaImage) -> Self {
+    pub fn new(ctx: &egui::Context, img: RgbaImage, status_msg: Option<String>) -> Self {
         let original = img.clone();
         let w = img.width() as usize;
         let h = img.height() as usize;
         let pixels = img.into_raw();
         let color_image = ColorImage::from_rgba_unmultiplied([w, h], &pixels);
         let texture = ctx.load_texture("editor_image", color_image, TextureOptions::default());
+        let status_message = status_msg.clone();
+        let status_set_at = if status_msg.is_some() { f64::MAX } else { 0.0 };
+
         Self {
             texture,
             original_image: original,
             active_tool: Tool::None,
             strokes: Vec::new(),
             current_stroke: None,
-            status_message: None,
-            status_set_at: 0.0,
+            status_message,
+            status_set_at,
         }
     }
 
@@ -413,14 +416,10 @@ fn copy_to_clipboard(image: &RgbaImage) -> anyhow::Result<()> {
 }
 
 fn save_to_file(image: &RgbaImage) -> anyhow::Result<String> {
-    let output_dir = Path::new("screenshots");
-    std::fs::create_dir_all(output_dir)?;
+    let output_dir = crate::export::get_screenshot_directory();
+    std::fs::create_dir_all(&output_dir)?;
 
-    let timestamp = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_secs();
-    let filename = format!("rgrim_{}.png", timestamp);
+    let filename = crate::export::generate_screenshot_filename();
     let path = output_dir.join(&filename);
 
     image.save(&path)?;

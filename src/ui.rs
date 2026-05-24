@@ -1,6 +1,8 @@
-use std::sync::{Arc, Mutex};
-use eframe::egui::{self, ColorImage, CornerRadius, Pos2, Rect, Sense, StrokeKind, TextureHandle, TextureOptions};
+use eframe::egui::{
+    self, ColorImage, CornerRadius, Pos2, Rect, Sense, StrokeKind, TextureHandle, TextureOptions,
+};
 use image::RgbaImage;
+use std::sync::{Arc, Mutex};
 
 /// Runs the full-screen sniper overlay.
 /// Returns the selected region, or `None` if cancelled.
@@ -64,8 +66,7 @@ impl SniperOverlay {
 }
 
 impl eframe::App for SniperOverlay {
-    fn ui(&mut self, _ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
-    }
+    fn ui(&mut self, _ui: &mut egui::Ui, _frame: &mut eframe::Frame) {}
 
     #[allow(deprecated)]
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
@@ -78,51 +79,54 @@ impl eframe::App for SniperOverlay {
             ctx.send_viewport_cmd(egui::ViewportCommand::Close);
         }
 
-        egui::CentralPanel::default().frame(egui::Frame::NONE).show(ctx, |ui| {
-            // Use cached texture handle cleanly
-            ui.painter().image(
-                self.texture.id(),
-                viewport_rect,
-                Rect::from_min_max(Pos2::ZERO, Pos2::new(1.0, 1.0)),
-                egui::Color32::WHITE,
-            );
-
-            let response = ui.interact(viewport_rect, ui.next_auto_id(), Sense::click_and_drag());
-
-            if response.drag_started() {
-                self.selection_start = response.interact_pointer_pos();
-                self.selection_end = self.selection_start;
-            }
-
-            if response.dragged() {
-                self.selection_end = response.interact_pointer_pos();
-            }
-
-            let was_dragging = self.selection_start.is_some();
-            if was_dragging && !response.dragged() && !response.is_pointer_button_down_on() {
-                if let (Some(start), Some(end)) = (self.selection_start, self.selection_end) {
-                    let mut rect = Rect::from_two_pos(start, end);
-
-                    if rect.area() <= 1.0 {
-                        rect = viewport_rect;
-                    }
-
-                    *self.result.lock().unwrap() = Some(rect);
-                }
-                ctx.send_viewport_cmd(egui::ViewportCommand::Close);
-            }
-
-            if let (Some(start), Some(end)) = (self.selection_start, self.selection_end) {
-                let rect = Rect::from_two_pos(start, end);
-                ui.painter().rect(
-                    rect,
-                    CornerRadius::ZERO,
-                    egui::Color32::from_rgba_premultiplied(0, 120, 255, 80),
-                    egui::Stroke::new(2.0, egui::Color32::from_rgb(0, 120, 255)),
-                    StrokeKind::Inside,
+        egui::CentralPanel::default()
+            .frame(egui::Frame::NONE)
+            .show(ctx, |ui| {
+                // Use cached texture handle cleanly
+                ui.painter().image(
+                    self.texture.id(),
+                    viewport_rect,
+                    Rect::from_min_max(Pos2::ZERO, Pos2::new(1.0, 1.0)),
+                    egui::Color32::WHITE,
                 );
-            }
-        });
+
+                let response =
+                    ui.interact(viewport_rect, ui.next_auto_id(), Sense::click_and_drag());
+
+                if response.drag_started() {
+                    self.selection_start = response.interact_pointer_pos();
+                    self.selection_end = self.selection_start;
+                }
+
+                if response.dragged() {
+                    self.selection_end = response.interact_pointer_pos();
+                }
+
+                let was_dragging = self.selection_start.is_some();
+                if was_dragging && !response.dragged() && !response.is_pointer_button_down_on() {
+                    if let (Some(start), Some(end)) = (self.selection_start, self.selection_end) {
+                        let mut rect = Rect::from_two_pos(start, end);
+
+                        if rect.area() <= 1.0 {
+                            rect = viewport_rect;
+                        }
+
+                        *self.result.lock().unwrap() = Some(rect);
+                    }
+                    ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                }
+
+                if let (Some(start), Some(end)) = (self.selection_start, self.selection_end) {
+                    let rect = Rect::from_two_pos(start, end);
+                    ui.painter().rect(
+                        rect,
+                        CornerRadius::ZERO,
+                        egui::Color32::from_rgba_premultiplied(0, 120, 255, 80),
+                        egui::Stroke::new(2.0, egui::Color32::from_rgb(0, 120, 255)),
+                        StrokeKind::Inside,
+                    );
+                }
+            });
 
         ctx.request_repaint();
     }
