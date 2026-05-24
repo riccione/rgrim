@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use eframe::egui::{self, ColorImage, Pos2, Rect, Sense, TextureHandle, TextureOptions, Vec2};
 use image::RgbaImage;
 use image::imageops;
@@ -56,13 +58,17 @@ struct Stroke {
 
 pub struct EditorApp {
     texture: TextureHandle,
+    original_image: RgbaImage,
     active_tool: Tool,
     strokes: Vec<Stroke>,
     current_stroke: Option<Stroke>,
+    status_message: Option<String>,
+    status_set_at: f64,
 }
 
 impl EditorApp {
     pub fn new(ctx: &egui::Context, img: RgbaImage) -> Self {
+        let original = img.clone();
         let w = img.width() as usize;
         let h = img.height() as usize;
         let pixels = img.into_raw();
@@ -70,10 +76,22 @@ impl EditorApp {
         let texture = ctx.load_texture("editor_image", color_image, TextureOptions::default());
         Self {
             texture,
+            original_image: original,
             active_tool: Tool::None,
             strokes: Vec::new(),
             current_stroke: None,
+            status_message: None,
+            status_set_at: 0.0,
         }
+    }
+
+    fn set_status(&mut self, ctx: &egui::Context, msg: String) {
+        self.status_message = Some(msg);
+        self.status_set_at = ctx.input(|i| i.time);
+    }
+
+    fn bake_and_export(&self) -> RgbaImage {
+        bake_strokes(&self.original_image, &self.strokes)
     }
 }
 
@@ -83,6 +101,13 @@ impl eframe::App for EditorApp {
 
     #[allow(deprecated)]
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        if self.status_message.is_some() {
+            let now = ctx.input(|i| i.time);
+            if now - self.status_set_at > 3.0 {
+                self.status_message = None;
+            }
+        }
+
         egui::TopBottomPanel::top("toolbar").show(ctx, |ui| {
             ui.horizontal(|ui| {
                 if ui.selectable_label(self.active_tool == Tool::Pen, "Pen").clicked() {
@@ -95,8 +120,20 @@ impl eframe::App for EditorApp {
                     self.strokes.clear();
                     self.current_stroke = None;
                 }
-                let _ = ui.button("Copy");
-                let _ = ui.button("Save");
+                if ui.button("Copy").clicked() {
+                    let baked = self.bake_and_export();
+                    match copy_to_clipboard(&baked) {
+                        Ok(()) => self.set_status(ctx, "Copied to clipboard!".into()),
+                        Err(e) => self.set_status(ctx, format!("Copy failed: {}", e)),
+                    }
+                }
+                if ui.button("Save").clicked() {
+                    let baked = self.bake_and_export();
+                    match save_to_file(&baked) {
+                        Ok(path) => self.set_status(ctx, format!("Saved to {}", path)),
+                        Err(e) => self.set_status(ctx, format!("Save failed: {}", e)),
+                    }
+                }
             });
         });
 
@@ -164,6 +201,12 @@ impl eframe::App for EditorApp {
                     }
                 }
             });
+
+        egui::TopBottomPanel::bottom("status_bar").show(ctx, |ui| {
+            if let Some(msg) = &self.status_message {
+                ui.label(msg);
+            }
+        });
     }
 }
 
@@ -195,4 +238,131 @@ fn paint_stroke(ui: &mut egui::Ui, stroke: &Stroke, image_rect: Rect) {
             egui::Stroke::new(stroke.thickness, stroke.color),
         );
     }
+}
+
+fn bake_strokes(image: &RgbaImage, strokes: &[Stroke]) -> RgbaImage {
+    let (w, h) = image.dimensions();
+    let mut output = image.clone();
+
+    for stroke in strokes {
+        if stroke.points.len() < 2 {
+            continue;
+        }
+
+        let mapped: Vec<(i32, i32)> = stroke
+            .points
+            .iter()
+            .map(|p| {
+                (
+                    (p.x.clamp(0.0, 1.0) * w as f32) as i32,
+                    (p.y.clamp(0.0, 1.0) * h as f32) as i32,
+                )
+            })
+            .collect();
+
+        let radius = (stroke.thickness / 2.0).ceil() as i32;
+
+        for i in 1..mapped.len() {
+            draw_thick_segment(&mut output, mapped[i - 1], mapped[i], radius, stroke.color);
+        }
+    }
+
+    output
+}
+
+fn draw_thick_segment(
+    img: &mut RgbaImage,
+    p1: (i32, i32),
+    p2: (i32, i32),
+    radius: i32,
+    color: egui::Color32,
+) {
+    let dx = (p2.0 - p1.0).abs();
+    let dy = -(p2.1 - p1.1).abs();
+    let sx = if p1.0 < p2.0 { 1 } else { -1 };
+    let sy = if p1.1 < p2.1 { 1 } else { -1 };
+    let mut err = dx + dy;
+    let mut x = p1.0;
+    let mut y = p1.1;
+
+    loop {
+        draw_filled_circle(img, x, y, radius, color);
+
+        if x == p2.0 && y == p2.1 {
+            break;
+        }
+        let e2 = 2 * err;
+        if e2 >= dy {
+            err += dy;
+            x += sx;
+        }
+        if e2 <= dx {
+            err += dx;
+            y += sy;
+        }
+    }
+}
+
+fn draw_filled_circle(img: &mut RgbaImage, cx: i32, cy: i32, r: i32, color: egui::Color32) {
+    let (w, h) = img.dimensions();
+    for dy in -r..=r {
+        for dx in -r..=r {
+            if dx * dx + dy * dy <= r * r {
+                let px = cx + dx;
+                let py = cy + dy;
+                if px >= 0 && px < w as i32 && py >= 0 && py < h as i32 {
+                    let pixel = img.get_pixel_mut(px as u32, py as u32);
+                    blend_pixel(pixel, color);
+                }
+            }
+        }
+    }
+}
+
+fn blend_pixel(pixel: &mut image::Rgba<u8>, color: egui::Color32) {
+    let src = [color.r(), color.g(), color.b(), color.a()];
+    if src[3] == 255 {
+        *pixel = image::Rgba([src[0], src[1], src[2], 255]);
+    } else if src[3] > 0 {
+        let a = src[3] as f32 / 255.0;
+        let inv = 1.0 - a;
+        let d = pixel.0;
+        pixel.0 = [
+            (src[0] as f32 * a + d[0] as f32 * inv) as u8,
+            (src[1] as f32 * a + d[1] as f32 * inv) as u8,
+            (src[2] as f32 * a + d[2] as f32 * inv) as u8,
+            255,
+        ];
+    }
+}
+
+fn copy_to_clipboard(image: &RgbaImage) -> anyhow::Result<()> {
+    let w = image.width() as usize;
+    let h = image.height() as usize;
+    let bytes = image.as_raw().clone();
+
+    let img_data = arboard::ImageData {
+        width: w,
+        height: h,
+        bytes: std::borrow::Cow::Owned(bytes),
+    };
+
+    let mut clipboard = arboard::Clipboard::new()?;
+    clipboard.set_image(img_data)?;
+    Ok(())
+}
+
+fn save_to_file(image: &RgbaImage) -> anyhow::Result<String> {
+    let output_dir = Path::new("screenshots");
+    std::fs::create_dir_all(output_dir)?;
+
+    let timestamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs();
+    let filename = format!("rgrim_{}.png", timestamp);
+    let path = output_dir.join(&filename);
+
+    image.save(&path)?;
+    Ok(filename)
 }
