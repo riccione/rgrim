@@ -72,6 +72,12 @@ impl eframe::App for SniperOverlay {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         ctx.set_pixels_per_point(1.0);
 
+        if ctx.input(|i| i.key_pressed(egui::Key::Escape) || i.key_pressed(egui::Key::Q)) {
+            *self.result.lock().unwrap() = None;
+            ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+            return;
+        }
+
         let viewport_rect = ctx.viewport_rect();
 
         if ctx.input(|i| i.key_pressed(egui::Key::Enter)) {

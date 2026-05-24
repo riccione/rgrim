@@ -109,6 +109,11 @@ impl eframe::App for EditorApp {
 
     #[allow(deprecated)]
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        if ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
+            ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+            return;
+        }
+
         if self.status_message.is_some() {
             let now = ctx.input(|i| i.time);
             if now - self.status_set_at > 3.0 {
