@@ -62,9 +62,10 @@ impl Tool {
     pub fn drawing_properties(&self) -> (egui::Color32, f32) {
         match self {
             Tool::Pen => (egui::Color32::RED, 3.0),
-            Tool::Highlighter => {
-                (egui::Color32::from_rgba_premultiplied(255, 255, 0, 80), 24.0)
-            }
+            Tool::Highlighter => (
+                egui::Color32::from_rgba_premultiplied(255, 255, 0, 80),
+                24.0,
+            ),
             Tool::None => unreachable!("drawing_properties called on Tool::None"),
         }
     }
@@ -299,7 +300,9 @@ fn paint_stroke(ui: &mut egui::Ui, stroke: &Stroke, image_rect: Rect) {
         )
     });
 
-    let Some(mut p1) = points.next() else { return; };
+    let Some(mut p1) = points.next() else {
+        return;
+    };
     let egui_stroke = egui::Stroke::new(stroke.thickness, stroke.color);
 
     for p2 in points {

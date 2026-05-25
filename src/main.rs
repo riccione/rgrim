@@ -93,7 +93,9 @@ struct DashboardApp {
 impl eframe::App for DashboardApp {
     #[allow(deprecated)]
     fn update(&mut self, ctx: &eframe::egui::Context, _frame: &mut eframe::Frame) {
-        if ctx.input(|i| i.key_pressed(eframe::egui::Key::Escape) || i.key_pressed(eframe::egui::Key::Q)) {
+        if ctx.input(|i| {
+            i.key_pressed(eframe::egui::Key::Escape) || i.key_pressed(eframe::egui::Key::Q)
+        }) {
             ctx.send_viewport_cmd(eframe::egui::ViewportCommand::Close);
             return;
         }
