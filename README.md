@@ -92,6 +92,64 @@ When saving captured visual content, the file engine checks configuration priori
 
 ---
 
+## System Global Hotkey Configuration
+
+Because `rgrim` operates as an on-demand native overlay, you must map the binary execution hook to your operating system's global shortcut daemon. This allows the tool to activate instantly in the background.
+
+### Linux (Sway, i3wm, GNOME, KDE)
+
+Linux handles custom global hotkeys natively via your desktop environment or window manager configuration files.
+
+#### Sway / i3wm
+Append these rules inside `~/.config/sway/config` (or `~/.config/i3/config`):
+```sway
+bindsym Mod4+Shift+g exec /relative/path/to/rgrim
+```
+
+#### GNOME
+
+1. Go to **Settings** -> **Keyboard** -> **Keyboard Shortcuts** -> **View and Customize Shortcuts**.
+2. Scroll to the bottom, select **Custom Shortcuts**, and click the **+** icon.
+3. Set **Name** to `rgrim Sniper`, **Command** to `/absolute/path/to/rgrim`, and map the shortcut to `Super + Shift + G`.
+
+#### KDE Plasma
+
+1. Go to **System Settings** -> **Shortcuts** -> **Custom Shortcuts**.
+2. Select **Edit** -> **New** -> **Global Shortcut** -> **Command/URL**.
+3. Map your trigger key matrix (`Meta + Shift + G`) and point the target path directly to your binary.
+
+### Windows (10 / 11)
+
+Windows does not feature an elite built-in CLI-to-keyboard mapper, so choose one of these native/official solutions:
+
+#### Method A: Microsoft PowerToys (Recommended & Cleanest)
+
+1. Download **Microsoft PowerToys** from the Microsoft Store or GitHub.
+2. Navigate to **Keyboard Manager** -> **Remap a shortcut** -> **Add shortcut remapping**.
+3. Map the physical shortcut `Win + Shift + G`.
+4. Set the **Action** dropdown to **Run Program** and paste the absolute file track path targeting your compiled `rgrim.exe`.
+
+#### Method B: Standard Desktop Shortcut Property (No extra software)
+
+1. Right-click your compiled `target\release\rgrim.exe` -> **Show more options** -> **Create shortcut** (move it to your Desktop).
+2. Right-click the newly generated desktop shortcut -> **Properties**.
+3. Click the **Shortcut key** box and input your combination (Note: Windows native desktop shortcut properties require `Ctrl + Alt + G` instead).
+
+### macOS
+
+To avoid heavy third-party automation tools, you can leverage Apple's native environment features:
+
+#### Using the native Shortcuts App
+
+1. Launch the macOS **Shortcuts** application.
+2. Select **+** to build a brand new workflow pipeline layout.
+3. Drag the **Run Shell Script** action block into the layout pane and input `/absolute/path/to/rgrim`.
+4. Inside the right-hand options configuration drawer, toggle **Use as Quick Action**.
+5. Check **Provide Keyboard Shortcut** and bind it directly to `Cmd + Shift + G` (or `Opt + Shift + G`).
+6. *Note: Ensure you grant the executable **Accessibility** and **Screen Recording** permissions under macOS System Settings upon your first launch.*
+
+---
+
 ## How to Contribute
 
 We welcome contributions to `rgrim`! Please ensure your work aligns with our formatting and workflow structures:
