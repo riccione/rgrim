@@ -2,6 +2,16 @@
 name = "rgrim"
 version = "0.1.0"
 edition = "2024"
+homepage = "https://github.com/riccione/rgrim"
+documentation = "https://github.com/riccione/rgrim"
+repository = "https://github.com/riccione/rgrim"
+
+[profile.release]
+opt-level = 3            # Full optimization (default for release)
+lto = true               # Enable Link-Time Optimization across all crates
+codegen-units = 1        # Reduce parallel code generation units to maximize LTO impact
+panic = "abort"          # Remove panic unwinding overhead (shrinks binary size)
+strip = true             # Automatically strip symbols and debug info from the binary
 
 [dependencies]
 anyhow = "1.0.102"
