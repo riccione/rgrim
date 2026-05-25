@@ -14,7 +14,10 @@ fn test_screen_capture_engine() {
 
     let captured = result.unwrap();
 
-    assert!(captured.image.width() > 0, "Captured width must be greater than 0");
+    assert!(
+        captured.image.width() > 0,
+        "Captured width must be greater than 0"
+    );
     assert!(
         captured.image.height() > 0,
         "Captured height must be greater than 0"
