@@ -64,6 +64,18 @@ enum Tool {
     Highlighter,
 }
 
+impl Tool {
+    pub fn drawing_properties(&self) -> (egui::Color32, f32) {
+        match self {
+            Tool::Pen => (egui::Color32::RED, 3.0),
+            Tool::Highlighter => {
+                (egui::Color32::from_rgba_premultiplied(255, 255, 0, 80), 24.0)
+            }
+            Tool::None => unreachable!("drawing_properties called on Tool::None"),
+        }
+    }
+}
+
 struct Stroke {
     points: Vec<Pos2>,
     color: egui::Color32,
@@ -228,20 +240,11 @@ impl eframe::App for EditorApp {
                     if response.drag_started() {
                         if let Some(pos) = response.interact_pointer_pos() {
                             let normalized = screen_to_image(pos, image_rect);
+                            let (color, thickness) = self.active_tool.drawing_properties();
                             self.current_stroke = Some(Stroke {
                                 points: vec![normalized],
-                                color: match self.active_tool {
-                                    Tool::Highlighter => {
-                                        egui::Color32::from_rgba_premultiplied(255, 255, 0, 80)
-                                    }
-                                    Tool::Pen => egui::Color32::RED,
-                                    _ => unreachable!(),
-                                },
-                                thickness: match self.active_tool {
-                                    Tool::Highlighter => 24.0,
-                                    Tool::Pen => 3.0,
-                                    _ => unreachable!(),
-                                },
+                                color,
+                                thickness,
                             });
                         }
                     }
