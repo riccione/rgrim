@@ -13,14 +13,26 @@ pub struct SelectionRect {
 }
 
 /// Crops an RgbaImage to the given egui::Rect region.
-/// Assumes 1:1 pixel mapping (pixels_per_point == 1.0).
+/// Coordinates are clamped to image bounds. Returns a 0×0 image if the
+/// region does not intersect the image.
 pub fn crop_image(image: &RgbaImage, region: &Rect) -> RgbaImage {
-    let x = region.min.x as u32;
-    let y = region.min.y as u32;
-    let w = (region.max.x - region.min.x) as u32;
-    let h = (region.max.y - region.min.y) as u32;
-    let mut img = image.clone();
-    imageops::crop(&mut img, x, y, w, h).to_image()
+    let img_w = image.width();
+    let img_h = image.height();
+
+    let x = (region.min.x as i32).max(0).min(img_w as i32) as u32;
+    let y = (region.min.y as i32).max(0).min(img_h as i32) as u32;
+
+    let max_x = (region.max.x as i32).max(0).min(img_w as i32) as u32;
+    let max_y = (region.max.y as i32).max(0).min(img_h as i32) as u32;
+
+    let w = max_x.saturating_sub(x);
+    let h = max_y.saturating_sub(y);
+
+    if w == 0 || h == 0 {
+        return RgbaImage::new(0, 0);
+    }
+
+    imageops::crop_imm(image, x, y, w, h).to_image()
 }
 
 /// Runs the main editor window with toolbar and central canvas.
