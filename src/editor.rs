@@ -292,25 +292,19 @@ fn screen_to_image(screen_pos: Pos2, image_rect: Rect) -> Pos2 {
 }
 
 fn paint_stroke(ui: &mut egui::Ui, stroke: &Stroke, image_rect: Rect) {
-    if stroke.points.is_empty() {
-        return;
-    }
-    let mapped: Vec<Pos2> = stroke
-        .points
-        .iter()
-        .map(|p| {
-            Pos2::new(
-                image_rect.min.x + p.x * image_rect.width(),
-                image_rect.min.y + p.y * image_rect.height(),
-            )
-        })
-        .collect();
+    let mut points = stroke.points.iter().map(|p| {
+        Pos2::new(
+            image_rect.min.x + p.x * image_rect.width(),
+            image_rect.min.y + p.y * image_rect.height(),
+        )
+    });
 
-    for i in 1..mapped.len() {
-        ui.painter().line_segment(
-            [mapped[i - 1], mapped[i]],
-            egui::Stroke::new(stroke.thickness, stroke.color),
-        );
+    let Some(mut p1) = points.next() else { return; };
+    let egui_stroke = egui::Stroke::new(stroke.thickness, stroke.color);
+
+    for p2 in points {
+        ui.painter().line_segment([p1, p2], egui_stroke);
+        p1 = p2;
     }
 }
 
