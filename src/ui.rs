@@ -98,7 +98,8 @@ impl eframe::App for SniperOverlay {
                     egui::Color32::WHITE,
                 );
 
-                let response = ui.interact(content_rect, ui.next_auto_id(), Sense::click_and_drag());
+                let response =
+                    ui.interact(content_rect, ui.next_auto_id(), Sense::click_and_drag());
 
                 if response.drag_started() {
                     self.selection_start = response.interact_pointer_pos();
