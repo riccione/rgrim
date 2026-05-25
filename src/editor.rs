@@ -6,12 +6,6 @@ use image::ImageEncoder;
 use image::RgbaImage;
 use image::imageops;
 
-/// Represents a selected screen region captured by the sniper overlay.
-#[derive(Clone, Debug)]
-pub struct SelectionRect {
-    pub region: Rect,
-}
-
 /// Crops an RgbaImage to the given egui::Rect region.
 /// Coordinates are clamped to image bounds. Returns a 0×0 image if the
 /// region does not intersect the image.
