@@ -46,6 +46,13 @@ jobs:
       with:
         targets: ${{ matrix.target }}
 
+    # --- Ubuntu-only system dependencies ---
+    - name: Install Linux Dependencies
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y pkg-config libegl1-mesa-dev libpipewire-0.3-dev libgbm-dev
+
     - name: Run Tests
       if: contains(matrix.target, 'x86_64')
       run: cargo test --release
@@ -68,12 +75,28 @@ jobs:
           target/${{ matrix.target }}/release/${{ env.BIN_NAME }}.exe
         args: --best --lzma
 
+    - name: Set Changelog Base Reference
+      if: matrix.os == 'ubuntu-latest'
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        # Try to find the latest production release tag via GitHub CLI
+        LATEST_RELEASE=$(gh release view --json tagName --template '{{.tagName}}' 2>/dev/null || echo "")
+
+        if [ -n "$LATEST_RELEASE" ]; then
+          echo "CHANGELOG_BASE=$LATEST_RELEASE" >> $GITHUB_ENV
+        else
+          # Fallback to the root commit hash of your repository if no release exists
+          echo "CHANGELOG_BASE=$(git rev-list --max-parents=0 HEAD)" >> $GITHUB_ENV
+        fi
+
     - name: Generate Changelog
       id: changelog
       if: matrix.os == 'ubuntu-latest'
       uses: jaywcjlove/changelog-generator@main
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
+        base-ref: ${{ env.CHANGELOG_BASE }}
 
     - name: Upload binaries to release
       uses: svenstaro/upload-release-action@v2
