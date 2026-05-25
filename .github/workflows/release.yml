@@ -75,24 +75,28 @@ jobs:
           target/${{ matrix.target }}/release/${{ env.BIN_NAME }}.exe
         args: --best --lzma
 
-    - name: Check for Previous Release
+    - name: Set Changelog Base Reference
       if: matrix.os == 'ubuntu-latest'
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        # Check if any GitHub releases exist. If none exist, output 'false'
-        if gh release list --limit 1 | grep -q .; then
-          echo "HAS_RELEASE=true" >> $GITHUB_ENV
+        # Try to find the latest production release tag via GitHub CLI
+        LATEST_RELEASE=$(gh release view --json tagName --template '{{.tagName}}' 2>/dev/null || echo "")
+
+        if [ -n "$LATEST_RELEASE" ]; then
+          echo "CHANGELOG_BASE=$LATEST_RELEASE" >> $GITHUB_ENV
         else
-          echo "HAS_RELEASE=false" >> $GITHUB_ENV
+          # Fallback to the root commit hash of your repository if no release exists
+          echo "CHANGELOG_BASE=$(git rev-list --max-parents=0 HEAD)" >> $GITHUB_ENV
         fi
 
     - name: Generate Changelog
       id: changelog
-      if: matrix.os == 'ubuntu-latest' && env.HAS_RELEASE == 'true'
+      if: matrix.os == 'ubuntu-latest'
       uses: jaywcjlove/changelog-generator@main
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
+        base-ref: ${{ env.CHANGELOG_BASE }}
 
     - name: Upload binaries to release
       uses: svenstaro/upload-release-action@v2
