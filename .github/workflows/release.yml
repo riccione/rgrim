@@ -75,14 +75,21 @@ jobs:
           target/${{ matrix.target }}/release/${{ env.BIN_NAME }}.exe
         args: --best --lzma
 
-    - name: Check for Previous Tag
+    - name: Check for Previous Release
       if: matrix.os == 'ubuntu-latest'
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        echo "previous_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo '')" >> $GITHUB_ENV
+        # Check if any GitHub releases exist. If none exist, output 'false'
+        if gh release list --limit 1 | grep -q .; then
+          echo "HAS_RELEASE=true" >> $GITHUB_ENV
+        else
+          echo "HAS_RELEASE=false" >> $GITHUB_ENV
+        fi
 
     - name: Generate Changelog
       id: changelog
-      if: matrix.os == 'ubuntu-latest'
+      if: matrix.os == 'ubuntu-latest' && env.HAS_RELEASE == 'true'
       uses: jaywcjlove/changelog-generator@main
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
