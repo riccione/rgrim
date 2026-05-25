@@ -142,6 +142,14 @@ impl eframe::App for SniperOverlay {
                         StrokeKind::Inside,
                     );
                 }
+
+                // Permanent blue border — drawn last so it renders on top of everything
+                ui.painter().rect_stroke(
+                    content_rect,
+                    0.0,
+                    egui::Stroke::new(2.0, egui::Color32::from_rgb(0, 120, 215)),
+                    egui::StrokeKind::Inside,
+                );
             });
 
         ctx.request_repaint();
