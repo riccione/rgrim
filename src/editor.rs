@@ -78,8 +78,8 @@ impl EditorApp {
         let color_image = ColorImage::from_rgba_unmultiplied(size, img.as_raw());
         let texture = ctx.load_texture("editor_image", color_image, TextureOptions::default());
         let original = img.clone();
-        let status_message = status_msg.clone();
         let status_set_at = if status_msg.is_some() { f64::MAX } else { 0.0 };
+        let status_message = status_msg;
 
         Self {
             texture,
