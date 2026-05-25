@@ -14,8 +14,7 @@ pub fn get_screenshot_directory() -> PathBuf {
                 return PathBuf::from(env_path);
             }
 
-            let home_screenshots =
-                dirs::home_dir().map(|p| p.join("Pictures").join("Screenshots"));
+            let home_screenshots = dirs::home_dir().map(|p| p.join("Pictures").join("Screenshots"));
             let pictures_screenshots = dirs::picture_dir().map(|p| p.join("Screenshots"));
             let local_fallback = PathBuf::from("screenshots");
 
