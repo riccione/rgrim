@@ -32,7 +32,7 @@ pub fn run_sniper_overlay(background: RgbaImage) -> Option<Rect> {
     )
     .ok()?;
 
-    result.lock().ok().and_then(|r| *r)
+    *result.lock().unwrap()
 }
 
 struct SniperOverlay {
