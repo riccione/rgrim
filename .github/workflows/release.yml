@@ -81,6 +81,7 @@ jobs:
       uses: jaywcjlove/changelog-generator@main
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
+        hasRelease: false  # Allows fallback generation if no previous release exists
 
     - name: Upload binaries to release
       uses: svenstaro/upload-release-action@v2
