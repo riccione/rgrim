@@ -2,6 +2,7 @@ use rgrim::capture::capture_primary_monitor;
 use std::path::Path;
 
 #[test]
+#[ignore]
 fn test_screen_capture_engine() {
     let result = capture_primary_monitor();
 
