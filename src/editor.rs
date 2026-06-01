@@ -232,35 +232,34 @@ impl eframe::App for EditorApp {
                     let response =
                         ui.interact(image_rect, ui.next_auto_id(), Sense::click_and_drag());
 
-                    if response.drag_started() {
-                        if let Some(pos) = response.interact_pointer_pos() {
-                            let normalized = screen_to_image(pos, image_rect);
-                            let (color, thickness) = self.active_tool.drawing_properties();
-                            self.current_stroke = Some(Stroke {
-                                points: vec![normalized],
-                                color,
-                                thickness,
-                            });
-                        }
+                    if response.drag_started()
+                        && let Some(pos) = response.interact_pointer_pos()
+                    {
+                        let normalized = screen_to_image(pos, image_rect);
+                        let (color, thickness) = self.active_tool.drawing_properties();
+                        self.current_stroke = Some(Stroke {
+                            points: vec![normalized],
+                            color,
+                            thickness,
+                        });
                     }
 
-                    if response.dragged() {
-                        if let Some(stroke) = &mut self.current_stroke {
-                            if let Some(pos) = response.interact_pointer_pos() {
-                                let normalized = screen_to_image(pos, image_rect);
-                                stroke.points.push(normalized);
-                            }
-                        }
+                    if response.dragged()
+                        && let Some(stroke) = &mut self.current_stroke
+                        && let Some(pos) = response.interact_pointer_pos()
+                    {
+                        let normalized = screen_to_image(pos, image_rect);
+                        stroke.points.push(normalized);
                     }
 
                     let was_dragging = self.current_stroke.is_some();
-                    if was_dragging && !response.dragged() && !response.is_pointer_button_down_on()
+                    if was_dragging
+                        && !response.dragged()
+                        && !response.is_pointer_button_down_on()
+                        && let Some(stroke) = self.current_stroke.take()
+                        && !stroke.points.is_empty()
                     {
-                        if let Some(stroke) = self.current_stroke.take() {
-                            if !stroke.points.is_empty() {
-                                self.strokes.push(stroke);
-                            }
-                        }
+                        self.strokes.push(stroke);
                     }
                 }
             });
@@ -420,10 +419,10 @@ fn copy_to_clipboard(image: &RgbaImage) -> anyhow::Result<()> {
 
     // Attempt 1: Try native arboard handler
     let clipboard = arboard::Clipboard::new();
-    if let Ok(mut cb) = clipboard {
-        if cb.set_image(img_data).is_ok() {
-            return Ok(());
-        }
+    if let Ok(mut cb) = clipboard
+        && cb.set_image(img_data).is_ok()
+    {
+        return Ok(());
     }
 
     // Attempt 2: Fallback explicitly tailored for Sway/Wayland via wl-copy
