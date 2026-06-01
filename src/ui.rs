@@ -114,20 +114,25 @@ impl eframe::App for SniperOverlay {
                 }
 
                 let was_dragging = self.selection_start.is_some();
-                if was_dragging && !response.dragged() && !response.is_pointer_button_down_on() {
-                    if let (Some(start), Some(end)) = (self.selection_start, self.selection_end) {
-                        let mut rect = Rect::from_two_pos(start, end);
+                if was_dragging
+                    && !response.dragged()
+                    && !response.is_pointer_button_down_on()
+                    && let (Some(start), Some(end)) = (self.selection_start, self.selection_end)
+                {
+                    let mut rect = Rect::from_two_pos(start, end);
 
-                        if rect.area() <= 1.0 {
-                            rect = content_rect;
-                        }
-
-                        self.current_selection = Some(rect);
+                    if rect.area() <= 1.0 {
+                        rect = content_rect;
                     }
+
+                    self.current_selection = Some(rect);
                 }
 
                 let drag_rect = self.current_selection.or_else(|| {
-                    Some(Rect::from_two_pos(self.selection_start?, self.selection_end?))
+                    Some(Rect::from_two_pos(
+                        self.selection_start?,
+                        self.selection_end?,
+                    ))
                 });
                 if let Some(rect) = drag_rect {
                     ui.painter().rect(
@@ -139,40 +144,50 @@ impl eframe::App for SniperOverlay {
                     );
                 }
 
-                if let Some(sel) = self.current_selection {
-                    if sel.width() > 5.0 && sel.height() > 5.0 {
-                        let mut button_pos = sel.left_bottom() + egui::vec2(10.0, 10.0);
-                        if button_pos.y + 40.0 > content_rect.bottom() {
-                            button_pos = sel.left_top() - egui::vec2(-10.0, 45.0);
-                        }
-
-                        egui::Area::new(egui::Id::new("sniper_toolbar"))
-                            .fixed_pos(button_pos)
-                            .order(egui::Order::Foreground)
-                            .show(ctx, |ui| {
-                                egui::Frame::window(&ctx.style())
-                                    .fill(egui::Color32::from_rgba_unmultiplied(30, 30, 30, 240))
-                                    .stroke(egui::Stroke::new(1.0, egui::Color32::from_rgb(0, 120, 215)))
-                                    .rounding(6.0)
-                                    .inner_margin(6.0)
-                                    .show(ui, |ui| {
-                                        ui.horizontal(|ui| {
-                                            let crop_button = egui::Button::new("✂ Crop Selection")
-                                                .fill(egui::Color32::from_rgb(0, 120, 215));
-                                            if ui.add(crop_button).clicked() {
-                                                let scale_x = self.image_width / content_rect.width();
-                                                let scale_y = self.image_height / content_rect.height();
-                                                let physical_rect = egui::Rect::from_min_max(
-                                                    egui::Pos2::new(sel.min.x * scale_x, sel.min.y * scale_y),
-                                                    egui::Pos2::new(sel.max.x * scale_x, sel.max.y * scale_y),
-                                                );
-                                                *self.result.lock().unwrap() = Some(physical_rect);
-                                                ctx.send_viewport_cmd(egui::ViewportCommand::Close);
-                                            }
-                                        });
-                                    });
-                            });
+                if let Some(sel) = self.current_selection
+                    && sel.width() > 5.0
+                    && sel.height() > 5.0
+                {
+                    let mut button_pos = sel.left_bottom() + egui::vec2(10.0, 10.0);
+                    if button_pos.y + 40.0 > content_rect.bottom() {
+                        button_pos = sel.left_top() - egui::vec2(-10.0, 45.0);
                     }
+
+                    egui::Area::new(egui::Id::new("sniper_toolbar"))
+                        .fixed_pos(button_pos)
+                        .order(egui::Order::Foreground)
+                        .show(ctx, |ui| {
+                            egui::Frame::window(&ctx.style())
+                                .fill(egui::Color32::from_rgba_unmultiplied(30, 30, 30, 240))
+                                .stroke(egui::Stroke::new(
+                                    1.0,
+                                    egui::Color32::from_rgb(0, 120, 215),
+                                ))
+                                .rounding(6.0)
+                                .inner_margin(6.0)
+                                .show(ui, |ui| {
+                                    ui.horizontal(|ui| {
+                                        let crop_button = egui::Button::new("✂ Crop Selection")
+                                            .fill(egui::Color32::from_rgb(0, 120, 215));
+                                        if ui.add(crop_button).clicked() {
+                                            let scale_x = self.image_width / content_rect.width();
+                                            let scale_y = self.image_height / content_rect.height();
+                                            let physical_rect = egui::Rect::from_min_max(
+                                                egui::Pos2::new(
+                                                    sel.min.x * scale_x,
+                                                    sel.min.y * scale_y,
+                                                ),
+                                                egui::Pos2::new(
+                                                    sel.max.x * scale_x,
+                                                    sel.max.y * scale_y,
+                                                ),
+                                            );
+                                            *self.result.lock().unwrap() = Some(physical_rect);
+                                            ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                                        }
+                                    });
+                                });
+                        });
                 }
 
                 // Permanent blue border — drawn last so it renders on top of everything
