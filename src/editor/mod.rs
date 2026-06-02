@@ -4,12 +4,11 @@ use image::imageops;
 
 use anyhow::Result;
 
-mod types;
 mod export;
+mod types;
 
-use self::types::{Tool, Stroke};
 use self::export::{bake_strokes, copy_to_clipboard, save_to_file};
-
+use self::types::{Stroke, Tool};
 
 /// Crops an RgbaImage to the given egui::Rect region.
 /// Coordinates are clamped to image bounds. Returns a 0×0 image if the
