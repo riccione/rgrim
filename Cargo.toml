@@ -6,12 +6,30 @@ homepage = "https://github.com/riccione/rgrim"
 documentation = "https://github.com/riccione/rgrim"
 repository = "https://github.com/riccione/rgrim"
 
+[package.metadata.release]
+# Prevent cargo-release from trying to upload to crates.io
+publish = false
+
+# Customize the automatically generated git commit message
+# {{version}} is a placeholder that cargo-release will fill in
+pre-release-commit-message = "chore: release v{{version}}"
+
+# Customize the git tag format
+tag-name = "v{{version}}"
+
+# Automatically push the commit and the tag to your origin remote
+push = true
+
+# Sign the git commit and tag (requires GPG/SSH signing set up in git)
+sign-commit = true
+sign-tag = true
+
 [profile.release]
-opt-level = "z"          # Size optimization
-lto = true               # Enable Link-Time Optimization across all crates
-codegen-units = 1        # Reduce parallel code generation units to maximize LTO impact
-panic = "abort"          # Remove panic unwinding overhead (shrinks binary size)
-strip = true             # Automatically strip symbols and debug info from the binary
+opt-level = "z" # Size optimization
+lto = true # Enable Link-Time Optimization across all crates
+codegen-units = 1 # Reduce parallel code generation units to maximize LTO impact
+panic = "abort" # Remove panic unwinding overhead (shrinks binary size)
+strip = true # Automatically strip symbols and debug info from the binary
 
 [dependencies]
 anyhow = "1.0.102"
