@@ -1,10 +1,15 @@
-use std::io::Write;
-use std::process::{Command, Stdio};
-
 use eframe::egui::{self, ColorImage, Pos2, Rect, Sense, TextureHandle, TextureOptions, Vec2};
-use image::ImageEncoder;
 use image::RgbaImage;
 use image::imageops;
+
+use anyhow::Result;
+
+mod types;
+mod export;
+
+use self::types::{Tool, Stroke};
+use self::export::{bake_strokes, copy_to_clipboard, save_to_file};
+
 
 /// Crops an RgbaImage to the given egui::Rect region.
 /// Coordinates are clamped to image bounds. Returns a 0×0 image if the
@@ -31,7 +36,7 @@ pub fn crop_image(image: &RgbaImage, region: &Rect) -> RgbaImage {
 
 /// Runs the main editor window with toolbar and central canvas.
 /// `auto_save_msg` is shown in the status bar on launch if set.
-pub fn run_editor(image: RgbaImage, auto_save_msg: Option<String>) -> anyhow::Result<()> {
+pub fn run_editor(image: RgbaImage, auto_save_msg: Option<String>) -> Result<()> {
     let native_options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default().with_inner_size(Vec2::new(960.0, 720.0)),
         ..Default::default()
@@ -49,32 +54,6 @@ pub fn run_editor(image: RgbaImage, auto_save_msg: Option<String>) -> anyhow::Re
     )?;
 
     Ok(())
-}
-
-#[derive(PartialEq)]
-enum Tool {
-    None,
-    Pen,
-    Highlighter,
-}
-
-impl Tool {
-    pub fn drawing_properties(&self) -> (egui::Color32, f32) {
-        match self {
-            Tool::Pen => (egui::Color32::RED, 3.0),
-            Tool::Highlighter => (
-                egui::Color32::from_rgba_premultiplied(255, 255, 0, 80),
-                24.0,
-            ),
-            Tool::None => unreachable!("drawing_properties called on Tool::None"),
-        }
-    }
-}
-
-struct Stroke {
-    points: Vec<Pos2>,
-    color: egui::Color32,
-    thickness: f32,
 }
 
 pub struct EditorApp {
@@ -308,166 +287,4 @@ fn paint_stroke(ui: &mut egui::Ui, stroke: &Stroke, image_rect: Rect) {
         ui.painter().line_segment([p1, p2], egui_stroke);
         p1 = p2;
     }
-}
-
-fn bake_strokes(image: &RgbaImage, strokes: &[Stroke]) -> RgbaImage {
-    let (w, h) = image.dimensions();
-    let mut output = image.clone();
-
-    for stroke in strokes {
-        if stroke.points.len() < 2 {
-            continue;
-        }
-
-        let mapped: Vec<(i32, i32)> = stroke
-            .points
-            .iter()
-            .map(|p| {
-                (
-                    (p.x.clamp(0.0, 1.0) * w as f32) as i32,
-                    (p.y.clamp(0.0, 1.0) * h as f32) as i32,
-                )
-            })
-            .collect();
-
-        let radius = (stroke.thickness / 2.0).ceil() as i32;
-
-        for i in 1..mapped.len() {
-            draw_thick_segment(&mut output, mapped[i - 1], mapped[i], radius, stroke.color);
-        }
-    }
-
-    output
-}
-
-fn draw_thick_segment(
-    img: &mut RgbaImage,
-    p1: (i32, i32),
-    p2: (i32, i32),
-    radius: i32,
-    color: egui::Color32,
-) {
-    let dx = (p2.0 - p1.0).abs();
-    let dy = -(p2.1 - p1.1).abs();
-    let sx = if p1.0 < p2.0 { 1 } else { -1 };
-    let sy = if p1.1 < p2.1 { 1 } else { -1 };
-    let mut err = dx + dy;
-    let mut x = p1.0;
-    let mut y = p1.1;
-
-    loop {
-        draw_filled_circle(img, x, y, radius, color);
-
-        if x == p2.0 && y == p2.1 {
-            break;
-        }
-        let e2 = 2 * err;
-        if e2 >= dy {
-            err += dy;
-            x += sx;
-        }
-        if e2 <= dx {
-            err += dx;
-            y += sy;
-        }
-    }
-}
-
-fn draw_filled_circle(img: &mut RgbaImage, cx: i32, cy: i32, r: i32, color: egui::Color32) {
-    let (w, h) = img.dimensions();
-    for dy in -r..=r {
-        for dx in -r..=r {
-            if dx * dx + dy * dy <= r * r {
-                let px = cx + dx;
-                let py = cy + dy;
-                if px >= 0 && px < w as i32 && py >= 0 && py < h as i32 {
-                    let pixel = img.get_pixel_mut(px as u32, py as u32);
-                    blend_pixel(pixel, color);
-                }
-            }
-        }
-    }
-}
-
-fn blend_pixel(pixel: &mut image::Rgba<u8>, color: egui::Color32) {
-    let src = [color.r(), color.g(), color.b(), color.a()];
-    if src[3] == 255 {
-        *pixel = image::Rgba([src[0], src[1], src[2], 255]);
-    } else if src[3] > 0 {
-        let a = src[3] as f32 / 255.0;
-        let inv = 1.0 - a;
-        let d = pixel.0;
-        pixel.0 = [
-            (src[0] as f32 * a + d[0] as f32 * inv) as u8,
-            (src[1] as f32 * a + d[1] as f32 * inv) as u8,
-            (src[2] as f32 * a + d[2] as f32 * inv) as u8,
-            255,
-        ];
-    }
-}
-
-fn copy_to_clipboard(image: &RgbaImage) -> anyhow::Result<()> {
-    let w = image.width() as usize;
-    let h = image.height() as usize;
-    let bytes = image.as_raw().to_vec();
-
-    let img_data = arboard::ImageData {
-        width: w,
-        height: h,
-        bytes: std::borrow::Cow::Owned(bytes),
-    };
-
-    // Attempt 1: Try native arboard handler
-    let clipboard = arboard::Clipboard::new();
-    if let Ok(mut cb) = clipboard
-        && cb.set_image(img_data).is_ok()
-    {
-        return Ok(());
-    }
-
-    // Attempt 2: Fallback explicitly tailored for Sway/Wayland via wl-copy
-    let mut png_bytes: Vec<u8> = Vec::new();
-    let mut cursor = std::io::Cursor::new(&mut png_bytes);
-    image::codecs::png::PngEncoder::new(&mut cursor)
-        .write_image(
-            image.as_raw(),
-            w as u32,
-            h as u32,
-            image::ExtendedColorType::Rgba8,
-        )
-        .map_err(|e| anyhow::anyhow!("Failed to encode clipboard buffer to PNG: {}", e))?;
-
-    let mut child = Command::new("wl-copy")
-        .arg("--type")
-        .arg("image/png")
-        .stdin(Stdio::piped())
-        .spawn()
-        .map_err(|e| {
-            anyhow::anyhow!(
-                "Both arboard and 'wl-copy' failed. If on a pure Wayland compositor, ensure 'wl-clipboard' is installed: {}",
-                e
-            )
-        })?;
-
-    if let Some(mut stdin) = child.stdin.take() {
-        stdin.write_all(&png_bytes)?;
-    }
-
-    let wl_status = child.wait()?;
-    if !wl_status.success() {
-        return Err(anyhow::anyhow!("wl-copy exited with an error status code"));
-    }
-
-    Ok(())
-}
-
-fn save_to_file(image: &RgbaImage) -> anyhow::Result<String> {
-    let output_dir = crate::export::get_screenshot_directory();
-    std::fs::create_dir_all(&output_dir)?;
-
-    let filename = crate::export::generate_screenshot_filename();
-    let path = output_dir.join(&filename);
-
-    image.save(&path)?;
-    Ok(filename)
 }
