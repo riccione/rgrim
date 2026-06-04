@@ -13,6 +13,8 @@ jobs:
   build-release:
     name: build-release
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
     # SINGLE SOURCE OF TRUTH: Define your binary name here
     env:
       BIN_NAME: rgrim
@@ -102,8 +104,6 @@ jobs:
 
     - name: Upload binaries to release
       uses: svenstaro/upload-release-action@v2
-      permissions:
-        contents: write
       with:
         repo_token: ${{ secrets.GITHUB_TOKEN }}
         file: target/${{ matrix.target }}/release/${{ env.BIN_NAME }}${{ matrix.ext }}
