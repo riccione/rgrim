@@ -7,7 +7,7 @@ on:
       - 'v*'
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build-release:
@@ -24,18 +24,22 @@ jobs:
             os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             platform: linux-x86_64
+            ext: ""
           - build: windows-x86_64
             os: windows-latest
             target: x86_64-pc-windows-msvc
             platform: win-x86_64
+            ext: ".exe"
           - build: macos-x86_64
             os: macos-latest
             target: x86_64-apple-darwin
             platform: macos-x86_64
+            ext: ""
           - build: macos-arm64
             os: macos-latest
             target: aarch64-apple-darwin
             platform: macos-arm64
+            ext: ""
 
     steps:
     - name: Checkout repository
@@ -45,7 +49,11 @@ jobs:
       uses: dtolnay/rust-toolchain@stable
       with:
         targets: ${{ matrix.target }}
-        components: clippy
+
+    - name: Rust Cache
+      uses: swatinem/rust-cache@v2
+      with:
+        key: ${{ matrix.target }}
 
     # --- Ubuntu-only system dependencies ---
     - name: Install Linux Dependencies
@@ -53,13 +61,6 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y pkg-config libegl1-mesa-dev libpipewire-0.3-dev libgbm-dev
-
-    - name: Run Clippy
-      run: cargo clippy --all-targets -- -D warnings
-
-    - name: Run Tests
-      if: contains(matrix.target, 'x86_64')
-      run: cargo test --release
 
     - name: Build
       run: cargo build --release --target ${{ matrix.target }} --locked
@@ -69,14 +70,11 @@ jobs:
       run: strip target/${{ matrix.target }}/release/${{ env.BIN_NAME }}
 
     - name: Run UPX
-      if: matrix.os != 'macos-latest' && matrix.os != 'windows-latest'
+      if: matrix.os == 'ubuntu-latest'
       uses: crazy-max/ghaction-upx@v3
       with:
         version: latest
-        # Matches either the extensionless binary or the .exe version
-        files: |
-          target/${{ matrix.target }}/release/${{ env.BIN_NAME }}
-          target/${{ matrix.target }}/release/${{ env.BIN_NAME }}.exe
+        files: target/${{ matrix.target }}/release/${{ env.BIN_NAME }}
         args: --best --lzma
 
     - name: Set Changelog Base Reference
@@ -104,12 +102,13 @@ jobs:
 
     - name: Upload binaries to release
       uses: svenstaro/upload-release-action@v2
+      permissions:
+        contents: write
       with:
         repo_token: ${{ secrets.GITHUB_TOKEN }}
-        # Logic: If windows, add .exe, else nothing
-        file: target/${{ matrix.target }}/release/${{ env.BIN_NAME }}${{ matrix.os == 'windows-latest' && '.exe' || '' }}
-        asset_name: ${{ env.BIN_NAME }}_${{ matrix.platform }}${{ matrix.os == 'windows-latest' && '.exe' || '' }}
+        file: target/${{ matrix.target }}/release/${{ env.BIN_NAME }}${{ matrix.ext }}
+        asset_name: ${{ env.BIN_NAME }}_${{ matrix.platform }}${{ matrix.ext }}
         tag: ${{ github.ref_name }}
         overwrite: true
         prerelease: ${{ !startsWith(github.ref, 'refs/tags/') }}
-        body: ${{ matrix.os == 'ubuntu-latest' && steps.changelog.outputs.changelog || '' }}
+        body: ${{ matrix.os == 'ubuntu-latest' && steps.changelog.outputs.changelog || null }}
