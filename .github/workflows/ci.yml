@@ -11,31 +11,52 @@ permissions:
   contents: read
 
 jobs:
-  validate:
-    name: Format, Lint & Test
+  fmt:
+    name: Format
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          components: rustfmt, clippy
+          components: rustfmt
+      - uses: swatinem/rust-cache@v2
+      - run: cargo fmt --all -- --check
 
+  clippy:
+    name: Clippy
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
       - name: Install Linux Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y pkg-config libegl1-mesa-dev libpipewire-0.3-dev libgbm-dev
+          sudo apt-get install -y \
+            pkg-config \
+            libegl1-mesa-dev \
+            libpipewire-0.3-dev \
+            libgbm-dev
+      - uses: swatinem/rust-cache@v2
+      - run: cargo clippy --all-targets -- -D warnings
 
-      - name: Rust Cache
-        uses: swatinem/rust-cache@v2
+  test:
+    name: Test
+    runs-on: ubuntu-latest
 
-      - name: Check Formatting
-        run: cargo fmt --all -- --check
-
-      - name: Run Clippy
-        run: cargo clippy --all-targets -- -D warnings
-
-      - name: Run Tests
-        run: cargo test --all-targets
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install Linux Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            pkg-config \
+            libegl1-mesa-dev \
+            libpipewire-0.3-dev \
+            libgbm-dev
+      - uses: swatinem/rust-cache@v2
+      - run: cargo test --all-targets
