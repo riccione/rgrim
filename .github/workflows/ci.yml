@@ -11,52 +11,11 @@ permissions:
   contents: read
 
 jobs:
-  fmt:
-    name: Format
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt
-      - uses: swatinem/rust-cache@v2
-      - run: cargo fmt --all -- --check
-
-  clippy:
-    name: Clippy
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: clippy
-      - name: Install Linux Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            pkg-config \
-            libegl1-mesa-dev \
-            libpipewire-0.3-dev \
-            libgbm-dev
-      - uses: swatinem/rust-cache@v2
-      - run: cargo clippy --all-targets -- -D warnings
-
-  test:
-    name: Test
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@stable
-      - name: Install Linux Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            pkg-config \
-            libegl1-mesa-dev \
-            libpipewire-0.3-dev \
-            libgbm-dev
-      - uses: swatinem/rust-cache@v2
-      - run: cargo test --all-targets
+  ci:
+    uses: riccione/github-workflows/.github/workflows/rust-ci.yml@v3
+    with:
+      apt_packages: >-
+        pkg-config
+        libegl1-mesa-dev
+        libpipewire-0.3-dev
+        libgbm-dev
