@@ -32,10 +32,10 @@ panic = "abort" # Remove panic unwinding overhead (shrinks binary size)
 strip = true # Automatically strip symbols and debug info from the binary
 
 [dependencies]
-anyhow = "1.0.102"
-arboard = "3.6.1"
-chrono = "0.4.44"
-dirs = "6.0.0"
-eframe = "0.34.2"
-image = { version = "0.25.10", default-features = false, features = ["png"] }
-xcap = "0.9.6"
+anyhow = "1.0"
+arboard = "3.6"
+chrono = "0.4"
+dirs = "7.0.0"
+eframe = "0.36"
+image = { version = "0.25", default-features = false, features = ["png"] }
+xcap = "0.9"
