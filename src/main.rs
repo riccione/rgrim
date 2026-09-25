@@ -79,7 +79,8 @@ fn run_dashboard_interface() -> Result<()> {
     eframe::run_native(
         "rgrim Dashboard",
         native_options,
-        Box::new(move |_cc| {
+        Box::new(move |cc| {
+            rgrim::style::apply_font_scale(&cc.egui_ctx, 1.2);
             Ok(Box::new(DashboardApp {
                 trigger_capture: capture_triggered_clone,
             }))
@@ -131,7 +132,7 @@ impl eframe::App for DashboardApp {
             ui.label(
                 eframe::egui::RichText::new("Esc / Q — Close")
                     .color(eframe::egui::Color32::GRAY)
-                    .size(11.0),
+                    .size(13.0),
             );
         });
     }

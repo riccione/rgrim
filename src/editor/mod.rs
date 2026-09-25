@@ -101,6 +101,7 @@ impl EditorApp {
         let mut visuals = egui::Visuals::dark();
         visuals.window_corner_radius = egui::CornerRadius::from(8);
         ctx.set_visuals(visuals);
+        crate::style::apply_font_scale(ctx, 1.2);
 
         let size = [img.width() as usize, img.height() as usize];
         let color_image = ColorImage::from_rgba_unmultiplied(size, img.as_raw());
@@ -156,7 +157,7 @@ impl eframe::App for EditorApp {
                 ui.horizontal(|ui| {
                     ui.add_space(4.0);
 
-                    let new_btn = ui.add_sized([60.0, 28.0], egui::Button::new("New"));
+                    let new_btn = ui.add_sized([72.0, 34.0], egui::Button::new("New"));
                     if new_btn.clicked() {
                         self.new_capture.store(true, Ordering::Relaxed);
                         ctx.send_viewport_cmd(egui::ViewportCommand::Close);
@@ -164,7 +165,7 @@ impl eframe::App for EditorApp {
                     }
 
                     let pen_btn = ui.add_sized(
-                        [60.0, 28.0],
+                        [72.0, 34.0],
                         egui::Button::selectable(self.active_tool == Tool::Pen, "Pen"),
                     );
                     if pen_btn.clicked() {
@@ -176,7 +177,7 @@ impl eframe::App for EditorApp {
                     }
 
                     let hl_btn = ui.add_sized(
-                        [86.0, 28.0],
+                        [104.0, 34.0],
                         egui::Button::selectable(
                             self.active_tool == Tool::Highlighter,
                             "Highlighter",
@@ -190,7 +191,7 @@ impl eframe::App for EditorApp {
                         };
                     }
 
-                    let clear_btn = ui.add_sized([60.0, 28.0], egui::Button::new("Clear"));
+                    let clear_btn = ui.add_sized([72.0, 34.0], egui::Button::new("Clear"));
                     if clear_btn.clicked() {
                         self.strokes.clear();
                         self.current_stroke = None;
@@ -198,7 +199,7 @@ impl eframe::App for EditorApp {
 
                     ui.separator();
 
-                    let copy_btn = ui.add_sized([65.0, 28.0], egui::Button::new("Copy"));
+                    let copy_btn = ui.add_sized([78.0, 34.0], egui::Button::new("Copy"));
                     if copy_btn.clicked() {
                         let baked = self.bake_and_export();
                         match copy_to_clipboard(&baked) {
@@ -207,7 +208,7 @@ impl eframe::App for EditorApp {
                         }
                     }
 
-                    let save_btn = ui.add_sized([65.0, 28.0], egui::Button::new("Save"));
+                    let save_btn = ui.add_sized([78.0, 34.0], egui::Button::new("Save"));
                     if save_btn.clicked() {
                         let baked = self.bake_and_export();
                         match save_to_file(&baked) {

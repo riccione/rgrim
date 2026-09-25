@@ -65,6 +65,7 @@ impl SniperOverlay {
         image_height: f32,
         result: Arc<Mutex<Option<Rect>>>,
     ) -> Self {
+        crate::style::apply_font_scale(ctx, 1.2);
         let texture = ctx.load_texture("background_image", color_image, TextureOptions::default());
 
         Self {
