@@ -1,3 +1,4 @@
+use anyhow::{Context, Result};
 use eframe::egui::{
     self, ColorImage, CornerRadius, Pos2, Rect, Sense, StrokeKind, TextureHandle, TextureOptions,
 };
@@ -6,7 +7,8 @@ use std::sync::{Arc, Mutex};
 
 /// Runs the full-screen sniper overlay.
 /// Returns the selected region in physical pixels, or `None` if cancelled.
-pub fn run_sniper_overlay(background: &RgbaImage) -> Option<Rect> {
+/// An `Err` means the overlay failed to start or run (e.g. no display).
+pub fn run_sniper_overlay(background: &RgbaImage) -> Result<Option<Rect>> {
     let result = Arc::new(Mutex::new(None));
     let result_clone = result.clone();
 
@@ -40,9 +42,9 @@ pub fn run_sniper_overlay(background: &RgbaImage) -> Option<Rect> {
             Ok(Box::new(app))
         }),
     )
-    .ok()?;
+    .context("Sniper overlay failed")?;
 
-    *result.lock().unwrap()
+    Ok(*result.lock().unwrap())
 }
 
 struct SniperOverlay {
