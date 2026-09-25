@@ -9,12 +9,13 @@ use anyhow::{Result, anyhow};
 pub(crate) fn copy_to_clipboard(image: &RgbaImage) -> Result<()> {
     let w = image.width() as usize;
     let h = image.height() as usize;
-    let bytes = image.as_raw().to_vec();
 
+    // arboard borrows the pixels (encodes to PNG internally); a `to_vec()`
+    // here would be a full-frame copy that every backend then ignores.
     let img_data = arboard::ImageData {
         width: w,
         height: h,
-        bytes: std::borrow::Cow::Owned(bytes),
+        bytes: std::borrow::Cow::Borrowed(image.as_raw()),
     };
 
     let clipboard = arboard::Clipboard::new();
