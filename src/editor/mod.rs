@@ -4,6 +4,9 @@ use image::imageops;
 
 use anyhow::Result;
 
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
+
 mod draw;
 mod export;
 mod types;
@@ -35,26 +38,46 @@ pub fn crop_image(image: &RgbaImage, region: &Rect) -> RgbaImage {
     imageops::crop_imm(image, x, y, w, h).to_image()
 }
 
+/// Outcome of a completed editor session.
+#[derive(PartialEq, Eq, Debug)]
+pub enum EditorOutcome {
+    /// Session ended normally (Escape / Q / window close).
+    Closed,
+    /// User clicked "New": the app should return to the capture/sniper state.
+    NewCapture,
+}
+
 /// Runs the main editor window with toolbar and central canvas.
 /// `auto_save_msg` is shown in the status bar on launch if set.
-pub fn run_editor(image: RgbaImage, auto_save_msg: Option<String>) -> Result<()> {
+pub fn run_editor(image: RgbaImage, auto_save_msg: Option<String>) -> Result<EditorOutcome> {
     let native_options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default().with_inner_size(Vec2::new(960.0, 720.0)),
         ..Default::default()
     };
 
     let mut image_data = Some(image);
+    let new_capture = Arc::new(AtomicBool::new(false));
+    let new_capture_clone = new_capture.clone();
 
     eframe::run_native(
         "rgrim-editor",
         native_options,
         Box::new(move |cc| {
             let img = image_data.take().expect("App state consumed twice");
-            Ok(Box::new(EditorApp::new(&cc.egui_ctx, img, auto_save_msg)))
+            Ok(Box::new(EditorApp::new(
+                &cc.egui_ctx,
+                img,
+                auto_save_msg,
+                new_capture_clone,
+            )))
         }),
     )?;
 
-    Ok(())
+    if new_capture.load(Ordering::Relaxed) {
+        Ok(EditorOutcome::NewCapture)
+    } else {
+        Ok(EditorOutcome::Closed)
+    }
 }
 
 pub struct EditorApp {
@@ -65,10 +88,16 @@ pub struct EditorApp {
     current_stroke: Option<Stroke>,
     status_message: Option<String>,
     status_set_at: f64,
+    new_capture: Arc<AtomicBool>,
 }
 
 impl EditorApp {
-    pub fn new(ctx: &egui::Context, img: RgbaImage, status_msg: Option<String>) -> Self {
+    pub fn new(
+        ctx: &egui::Context,
+        img: RgbaImage,
+        status_msg: Option<String>,
+        new_capture: Arc<AtomicBool>,
+    ) -> Self {
         let mut visuals = egui::Visuals::dark();
         visuals.window_corner_radius = egui::CornerRadius::from(8);
         ctx.set_visuals(visuals);
@@ -88,6 +117,7 @@ impl EditorApp {
             current_stroke: None,
             status_message,
             status_set_at,
+            new_capture,
         }
     }
 
@@ -127,6 +157,13 @@ impl eframe::App for EditorApp {
             .show(ctx, |ui| {
                 ui.horizontal(|ui| {
                     ui.add_space(4.0);
+
+                    let new_btn = ui.add_sized([60.0, 28.0], egui::Button::new("New"));
+                    if new_btn.clicked() {
+                        self.new_capture.store(true, Ordering::Relaxed);
+                        ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                        return;
+                    }
 
                     let pen_btn = ui.add_sized(
                         [60.0, 28.0],
