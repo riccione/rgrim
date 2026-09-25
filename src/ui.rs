@@ -139,7 +139,7 @@ impl eframe::App for SniperOverlay {
                         rect,
                         CornerRadius::ZERO,
                         egui::Color32::from_rgba_premultiplied(0, 120, 255, 80),
-                        egui::Stroke::new(2.0, egui::Color32::from_rgb(0, 120, 255)),
+                        egui::Stroke::new(2.0_f32, egui::Color32::from_rgb(0, 120, 255)),
                         StrokeKind::Inside,
                     );
                 }
@@ -160,7 +160,7 @@ impl eframe::App for SniperOverlay {
                             egui::Frame::window(&ctx.style())
                                 .fill(egui::Color32::from_rgba_unmultiplied(30, 30, 30, 240))
                                 .stroke(egui::Stroke::new(
-                                    1.0,
+                                    1.0_f32,
                                     egui::Color32::from_rgb(0, 120, 215),
                                 ))
                                 .rounding(6.0)
@@ -194,7 +194,7 @@ impl eframe::App for SniperOverlay {
                 ui.painter().rect_stroke(
                     content_rect,
                     0.0,
-                    egui::Stroke::new(2.0, egui::Color32::from_rgb(0, 120, 215)),
+                    egui::Stroke::new(2.0_f32, egui::Color32::from_rgb(0, 120, 215)),
                     egui::StrokeKind::Inside,
                 );
             });
