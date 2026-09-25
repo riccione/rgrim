@@ -99,8 +99,9 @@ struct DashboardApp {
 }
 
 impl eframe::App for DashboardApp {
-    #[allow(deprecated)]
-    fn update(&mut self, ctx: &eframe::egui::Context, _frame: &mut eframe::Frame) {
+    fn ui(&mut self, ui: &mut eframe::egui::Ui, _frame: &mut eframe::Frame) {
+        let ctx = ui.ctx().clone();
+
         if ctx.input(|i| {
             i.key_pressed(eframe::egui::Key::Escape) || i.key_pressed(eframe::egui::Key::Q)
         }) {
@@ -108,7 +109,7 @@ impl eframe::App for DashboardApp {
             return;
         }
 
-        eframe::egui::CentralPanel::default().show(ctx, |ui| {
+        eframe::egui::CentralPanel::default().show(ui, |ui| {
             ui.vertical_centered(|ui| {
                 ui.heading("📸 rgrim Screen Utility");
                 ui.label("A lightweight, cross-platform sniper annotation engine.");
@@ -134,6 +135,4 @@ impl eframe::App for DashboardApp {
             );
         });
     }
-
-    fn ui(&mut self, _ui: &mut eframe::egui::Ui, _frame: &mut eframe::Frame) {}
 }

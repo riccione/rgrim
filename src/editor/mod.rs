@@ -131,10 +131,9 @@ impl EditorApp {
 }
 
 impl eframe::App for EditorApp {
-    fn ui(&mut self, _ui: &mut egui::Ui, _frame: &mut eframe::Frame) {}
+    fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+        let ctx = ui.ctx().clone();
 
-    #[allow(deprecated)]
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         if ctx.input(|i| i.key_pressed(egui::Key::Escape) || i.key_pressed(egui::Key::Q)) {
             ctx.send_viewport_cmd(egui::ViewportCommand::Close);
             return;
@@ -147,13 +146,13 @@ impl eframe::App for EditorApp {
             }
         }
 
-        egui::TopBottomPanel::top("toolbar")
+        egui::Panel::top("toolbar")
             .frame(
-                egui::Frame::none()
+                egui::Frame::new()
                     .inner_margin(8.0)
-                    .fill(ctx.style().visuals.window_fill()),
+                    .fill(ctx.style_of(ctx.theme()).visuals.window_fill()),
             )
-            .show(ctx, |ui| {
+            .show(ui, |ui| {
                 ui.horizontal(|ui| {
                     ui.add_space(4.0);
 
@@ -166,7 +165,7 @@ impl eframe::App for EditorApp {
 
                     let pen_btn = ui.add_sized(
                         [60.0, 28.0],
-                        egui::SelectableLabel::new(self.active_tool == Tool::Pen, "Pen"),
+                        egui::Button::selectable(self.active_tool == Tool::Pen, "Pen"),
                     );
                     if pen_btn.clicked() {
                         self.active_tool = if self.active_tool == Tool::Pen {
@@ -178,7 +177,7 @@ impl eframe::App for EditorApp {
 
                     let hl_btn = ui.add_sized(
                         [86.0, 28.0],
-                        egui::SelectableLabel::new(
+                        egui::Button::selectable(
                             self.active_tool == Tool::Highlighter,
                             "Highlighter",
                         ),
@@ -203,8 +202,8 @@ impl eframe::App for EditorApp {
                     if copy_btn.clicked() {
                         let baked = self.bake_and_export();
                         match copy_to_clipboard(&baked) {
-                            Ok(()) => self.set_status(ctx, "Copied to clipboard!".into()),
-                            Err(e) => self.set_status(ctx, format!("Copy failed: {}", e)),
+                            Ok(()) => self.set_status(&ctx, "Copied to clipboard!".into()),
+                            Err(e) => self.set_status(&ctx, format!("Copy failed: {}", e)),
                         }
                     }
 
@@ -212,16 +211,34 @@ impl eframe::App for EditorApp {
                     if save_btn.clicked() {
                         let baked = self.bake_and_export();
                         match save_to_file(&baked) {
-                            Ok(path) => self.set_status(ctx, format!("Saved to {}", path)),
-                            Err(e) => self.set_status(ctx, format!("Save failed: {}", e)),
+                            Ok(path) => self.set_status(&ctx, format!("Saved to {}", path)),
+                            Err(e) => self.set_status(&ctx, format!("Save failed: {}", e)),
                         }
                     }
                 });
             });
 
+        if let Some(msg) = &self.status_message {
+            egui::Panel::bottom("status_bar")
+                .frame(
+                    egui::Frame::new()
+                        .inner_margin(6.0)
+                        .fill(egui::Color32::from_rgb(0, 120, 255)),
+                )
+                .show(ui, |ui| {
+                    ui.centered_and_justified(|ui| {
+                        ui.label(
+                            egui::RichText::new(msg)
+                                .color(egui::Color32::WHITE)
+                                .strong(),
+                        );
+                    });
+                });
+        }
+
         egui::CentralPanel::default()
-            .frame(egui::Frame::none().fill(egui::Color32::from_rgb(20, 20, 22)))
-            .show(ctx, |ui| {
+            .frame(egui::Frame::new().fill(egui::Color32::from_rgb(20, 20, 22)))
+            .show(ui, |ui| {
                 let available = ui.available_size();
                 let img_size = self.texture.size_vec2();
                 let scale = (available.x / img_size.x)
@@ -279,24 +296,6 @@ impl eframe::App for EditorApp {
                     }
                 }
             });
-
-        if let Some(msg) = &self.status_message {
-            egui::TopBottomPanel::bottom("status_bar")
-                .frame(
-                    egui::Frame::none()
-                        .inner_margin(6.0)
-                        .fill(egui::Color32::from_rgb(0, 120, 255)),
-                )
-                .show(ctx, |ui| {
-                    ui.centered_and_justified(|ui| {
-                        ui.label(
-                            egui::RichText::new(msg)
-                                .color(egui::Color32::WHITE)
-                                .strong(),
-                        );
-                    });
-                });
-        }
     }
 }
 

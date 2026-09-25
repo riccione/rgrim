@@ -80,10 +80,9 @@ impl SniperOverlay {
 }
 
 impl eframe::App for SniperOverlay {
-    fn ui(&mut self, _ui: &mut egui::Ui, _frame: &mut eframe::Frame) {}
+    fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+        let ctx = ui.ctx().clone();
 
-    #[allow(deprecated)]
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         if ctx.input(|i| i.key_pressed(egui::Key::Escape) || i.key_pressed(egui::Key::Q)) {
             *self.result.lock().unwrap() = None;
             ctx.send_viewport_cmd(egui::ViewportCommand::Close);
@@ -91,8 +90,8 @@ impl eframe::App for SniperOverlay {
         }
 
         egui::CentralPanel::default()
-            .frame(egui::Frame::none())
-            .show(ctx, |ui| {
+            .frame(egui::Frame::new())
+            .show(ui, |ui| {
                 let content_rect = ui.available_rect_before_wrap();
 
                 if ctx.input(|i| i.key_pressed(egui::Key::Enter)) {
@@ -167,14 +166,14 @@ impl eframe::App for SniperOverlay {
                     egui::Area::new(egui::Id::new("sniper_toolbar"))
                         .fixed_pos(button_pos)
                         .order(egui::Order::Foreground)
-                        .show(ctx, |ui| {
-                            egui::Frame::window(&ctx.style())
+                        .show(&ctx, |ui| {
+                            egui::Frame::window(&ctx.style_of(ctx.theme()))
                                 .fill(egui::Color32::from_rgba_unmultiplied(30, 30, 30, 240))
                                 .stroke(egui::Stroke::new(
                                     1.0_f32,
                                     egui::Color32::from_rgb(0, 120, 215),
                                 ))
-                                .rounding(6.0)
+                                .corner_radius(CornerRadius::same(6))
                                 .inner_margin(6.0)
                                 .show(ui, |ui| {
                                     ui.horizontal(|ui| {
