@@ -23,7 +23,7 @@ fn trigger_instant_capture_flow() -> Result<()> {
     loop {
         let captured = capture_primary_monitor()?;
 
-        let rect = run_sniper_overlay(captured.image.clone());
+        let rect = run_sniper_overlay(&captured.image);
 
         let Some(region) = rect else {
             println!("Selection cancelled.");
