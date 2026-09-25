@@ -6,9 +6,16 @@ use std::sync::{Arc, Mutex};
 
 /// Runs the full-screen sniper overlay.
 /// Returns the selected region in physical pixels, or `None` if cancelled.
-pub fn run_sniper_overlay(background: RgbaImage) -> Option<Rect> {
+pub fn run_sniper_overlay(background: &RgbaImage) -> Option<Rect> {
     let result = Arc::new(Mutex::new(None));
     let result_clone = result.clone();
+
+    let image_width = background.width() as f32;
+    let image_height = background.height() as f32;
+    let color_image = ColorImage::from_rgba_unmultiplied(
+        [background.width() as usize, background.height() as usize],
+        background.as_raw(),
+    );
 
     let native_options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
@@ -19,14 +26,17 @@ pub fn run_sniper_overlay(background: RgbaImage) -> Option<Rect> {
         ..Default::default()
     };
 
-    let mut background_data = Some(background);
-
     eframe::run_native(
         "rgrim-sniper",
         native_options,
         Box::new(move |cc| {
-            let raw_img = background_data.take().expect("App state consumed twice");
-            let app = SniperOverlay::new(&cc.egui_ctx, raw_img, result_clone);
+            let app = SniperOverlay::new(
+                &cc.egui_ctx,
+                color_image,
+                image_width,
+                image_height,
+                result_clone,
+            );
             Ok(Box::new(app))
         }),
     )
@@ -46,14 +56,13 @@ struct SniperOverlay {
 }
 
 impl SniperOverlay {
-    pub fn new(ctx: &egui::Context, img: RgbaImage, result: Arc<Mutex<Option<Rect>>>) -> Self {
-        let w = img.width() as f32;
-        let h = img.height() as f32;
-
-        let w_usize = img.width() as usize;
-        let h_usize = img.height() as usize;
-        let pixels = img.into_raw();
-        let color_image = ColorImage::from_rgba_unmultiplied([w_usize, h_usize], &pixels);
+    pub fn new(
+        ctx: &egui::Context,
+        color_image: ColorImage,
+        image_width: f32,
+        image_height: f32,
+        result: Arc<Mutex<Option<Rect>>>,
+    ) -> Self {
         let texture = ctx.load_texture("background_image", color_image, TextureOptions::default());
 
         Self {
@@ -62,8 +71,8 @@ impl SniperOverlay {
             selection_start: None,
             selection_end: None,
             current_selection: None,
-            image_width: w,
-            image_height: h,
+            image_width,
+            image_height,
         }
     }
 }
