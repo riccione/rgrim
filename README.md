@@ -71,6 +71,7 @@ Once selection captures finish, the sketch engine launches with a dedicated tool
 
 | Active Interaction | Mode / Tool Purpose |
 | --- | --- |
+| **New Button** | Discards the editor session and immediately re-enters sniper capture mode |
 | **Pen Button** | Sharp Red freehand illustration stroke ($3\text{px}$ profile) |
 | **Highlighter Button** | Semi-transparent yellow highlight channel ($24\text{px}$ profile) |
 | **Clear Button** | Completely flushes all vector stroke markers from active viewport |
