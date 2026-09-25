@@ -1,7 +1,7 @@
 use anyhow::{Result, anyhow};
 
 use rgrim::capture::capture_primary_monitor;
-use rgrim::editor::{crop_image, run_editor};
+use rgrim::editor::{EditorOutcome, crop_image, run_editor};
 use rgrim::export::{generate_screenshot_filename, get_screenshot_directory};
 use rgrim::ui::run_sniper_overlay;
 
@@ -20,11 +20,16 @@ fn main() -> Result<()> {
 }
 
 fn trigger_instant_capture_flow() -> Result<()> {
-    let captured = capture_primary_monitor()?;
+    loop {
+        let captured = capture_primary_monitor()?;
 
-    let rect = run_sniper_overlay(captured.image.clone());
+        let rect = run_sniper_overlay(captured.image.clone());
 
-    if let Some(region) = rect {
+        let Some(region) = rect else {
+            println!("Selection cancelled.");
+            return Ok(());
+        };
+
         let cropped = crop_image(&captured.image, &region);
 
         let save_dir = get_screenshot_directory();
@@ -49,12 +54,15 @@ fn trigger_instant_capture_flow() -> Result<()> {
             }
         };
 
-        run_editor(cropped, auto_save_msg)?;
-    } else {
-        println!("Selection cancelled.");
+        match run_editor(cropped, auto_save_msg)? {
+            EditorOutcome::NewCapture => {
+                // Give the compositor a moment to remove the closed editor
+                // window so it doesn't bleed into the next capture.
+                std::thread::sleep(std::time::Duration::from_millis(300));
+            }
+            EditorOutcome::Closed => return Ok(()),
+        }
     }
-
-    Ok(())
 }
 
 fn run_dashboard_interface() -> Result<()> {
