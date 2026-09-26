@@ -51,7 +51,7 @@ fn trigger_instant_capture_flow() -> Result<()> {
 /// `None` on any failure, since the editor can still save manually.
 fn try_auto_save(cropped: &RgbaImage) -> Option<String> {
     let save_dir = get_screenshot_directory();
-    std::fs::create_dir_all(&save_dir)
+    std::fs::create_dir_all(save_dir)
         .inspect_err(|e| eprintln!("Failed to create screenshot directory: {e}"))
         .ok()?;
 

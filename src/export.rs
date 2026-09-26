@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
 
 use chrono::Local;
@@ -7,7 +7,10 @@ static SCREENSHOT_DIR: OnceLock<PathBuf> = OnceLock::new();
 
 /// Determines where to save screenshots.
 /// Priority: `RGRIM_DIR` env var => `~/Pictures/Screenshots` => `XDG_PICTURES_DIR/Screenshots` => `./screenshots`
-pub fn get_screenshot_directory() -> PathBuf {
+///
+/// The resolution runs once; the returned reference is backed by the
+/// process-lifetime `OnceLock`, so callers borrow instead of cloning.
+pub fn get_screenshot_directory() -> &'static Path {
     SCREENSHOT_DIR
         .get_or_init(|| {
             if let Ok(env_path) = std::env::var("RGRIM_DIR") {
@@ -29,11 +32,26 @@ pub fn get_screenshot_directory() -> PathBuf {
                 .or(pictures_screenshots)
                 .unwrap_or(local_fallback)
         })
-        .clone()
+        .as_path()
 }
 
 /// Generates a filename: `screenshot_YYYY-MM-DD_HH-MM-SS.png`
 pub fn generate_screenshot_filename() -> String {
     let now = Local::now();
     now.format("screenshot_%Y-%m-%d_%H-%M-%S.png").to_string()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::get_screenshot_directory;
+
+    #[test]
+    fn screenshot_directory_is_cached_for_the_process_lifetime() {
+        let first = get_screenshot_directory();
+        let second = get_screenshot_directory();
+        assert!(
+            std::ptr::eq(first, second),
+            "the OnceLock must hand back the same address every call"
+        );
+    }
 }
