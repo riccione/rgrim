@@ -149,7 +149,7 @@ impl eframe::App for SniperOverlay {
                     ui.painter().rect(
                         rect,
                         CornerRadius::ZERO,
-                        egui::Color32::from_rgba_premultiplied(0, 120, 255, 80),
+                        egui::Color32::from_rgba_unmultiplied(0, 120, 255, 80),
                         egui::Stroke::new(2.0_f32, egui::Color32::from_rgb(0, 120, 255)),
                         StrokeKind::Inside,
                     );
