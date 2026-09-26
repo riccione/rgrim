@@ -1,6 +1,18 @@
+use std::time::{Duration, Instant};
+
 use anyhow::{Result, anyhow};
 use image::{DynamicImage, RgbaImage};
 use xcap::Monitor;
+
+/// Poll interval while waiting for the compositor to settle (~2.5 frames
+/// at 60 Hz). A fade-out produces different pixels every refresh, so any
+/// two consecutive identical captures mean presentation has caught up.
+const SETTLE_POLL: Duration = Duration::from_millis(40);
+
+/// Hard cap on settle-waiting. On perpetually animating desktops (video,
+/// blinking cursors, live wallpapers) stability may never be observed, so
+/// we hand back the newest frame rather than blocking indefinitely.
+const SETTLE_MAX_WAIT: Duration = Duration::from_millis(1000);
 
 pub struct CapturedScreen {
     pub name: String,
@@ -37,4 +49,25 @@ pub fn capture_primary_monitor() -> Result<CapturedScreen> {
         name: monitor_name,
         image: rgba_buffer,
     })
+}
+
+/// Captures the primary monitor once its output is stable across two
+/// consecutive frames. Use after closing a window of ours: compositors
+/// keep rendering the dying window (fade-out animations), so grabbing
+/// immediately can bleed it into the next capture. A blind sleep is
+/// either too short on slow compositors or wasted on fast ones; instead
+/// poll until the screen stops changing, with [`SETTLE_MAX_WAIT`] as the
+/// animated-desktop bail-out (newest frame returned on timeout).
+pub fn capture_settled_monitor() -> Result<CapturedScreen> {
+    let start = Instant::now();
+    let mut previous = capture_primary_monitor()?;
+
+    loop {
+        std::thread::sleep(SETTLE_POLL);
+        let current = capture_primary_monitor()?;
+        if current.image == previous.image || start.elapsed() >= SETTLE_MAX_WAIT {
+            return Ok(current);
+        }
+        previous = current;
+    }
 }

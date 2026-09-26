@@ -1,6 +1,6 @@
 use anyhow::{Result, anyhow};
 
-use rgrim::capture::capture_primary_monitor;
+use rgrim::capture::{capture_primary_monitor, capture_settled_monitor};
 use rgrim::editor::{EditorOutcome, crop_image, run_editor};
 use rgrim::export::{generate_screenshot_filename, get_screenshot_directory};
 use rgrim::ui::run_sniper_overlay;
@@ -20,9 +20,9 @@ fn main() -> Result<()> {
 }
 
 fn trigger_instant_capture_flow() -> Result<()> {
-    loop {
-        let captured = capture_primary_monitor()?;
+    let mut captured = capture_primary_monitor()?;
 
+    loop {
         let rect = run_sniper_overlay(&captured.image)?;
 
         let Some(region) = rect else {
@@ -56,9 +56,10 @@ fn trigger_instant_capture_flow() -> Result<()> {
 
         match run_editor(cropped, auto_save_msg)? {
             EditorOutcome::NewCapture => {
-                // Give the compositor a moment to remove the closed editor
-                // window so it doesn't bleed into the next capture.
-                std::thread::sleep(std::time::Duration::from_millis(300));
+                // The compositor may still be rendering the closed editor
+                // window; capture_settled_monitor() waits for stable output
+                // instead of relying on a guessed delay.
+                captured = capture_settled_monitor()?;
             }
             EditorOutcome::Closed => return Ok(()),
         }
