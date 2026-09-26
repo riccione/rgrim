@@ -15,6 +15,9 @@ use self::draw::bake_strokes;
 use self::export::{copy_to_clipboard, save_to_file};
 use self::types::{DrawTool, Stroke};
 
+/// How long a transient status-bar message stays visible, in seconds.
+const STATUS_TIMEOUT_SECS: f64 = 3.0;
+
 /// Crops an RgbaImage to the given egui::Rect region.
 /// Coordinates are clamped to image bounds. Returns a 0×0 image if the
 /// region does not intersect the image.
@@ -85,7 +88,10 @@ pub struct EditorApp {
     strokes: Vec<Stroke>,
     current_stroke: Option<Stroke>,
     status_message: Option<String>,
-    status_set_at: f64,
+    /// Absolute `input.time` at which `status_message` clears.
+    /// `None` means the message is sticky (e.g. the launch auto-save note)
+    /// or there is no message at all.
+    status_expires_at: Option<f64>,
     new_capture: Arc<AtomicBool>,
 }
 
@@ -104,7 +110,6 @@ impl EditorApp {
         let size = [img.width() as usize, img.height() as usize];
         let color_image = ColorImage::from_rgba_unmultiplied(size, img.as_raw());
         let texture = ctx.load_texture("editor_image", color_image, TextureOptions::default());
-        let status_set_at = if status_msg.is_some() { f64::MAX } else { 0.0 };
         let status_message = status_msg;
 
         Self {
@@ -114,14 +119,14 @@ impl EditorApp {
             strokes: Vec::new(),
             current_stroke: None,
             status_message,
-            status_set_at,
+            status_expires_at: None,
             new_capture,
         }
     }
 
     fn set_status(&mut self, ctx: &egui::Context, msg: String) {
         self.status_message = Some(msg);
-        self.status_set_at = ctx.input(|i| i.time);
+        self.status_expires_at = Some(ctx.input(|i| i.time) + STATUS_TIMEOUT_SECS);
     }
 
     fn toggle_tool(&mut self, tool: DrawTool) {
@@ -146,11 +151,11 @@ impl eframe::App for EditorApp {
             return;
         }
 
-        if self.status_message.is_some() {
-            let now = ctx.input(|i| i.time);
-            if now - self.status_set_at > 3.0 {
-                self.status_message = None;
-            }
+        if let Some(expires) = self.status_expires_at
+            && ctx.input(|i| i.time) > expires
+        {
+            self.status_message = None;
+            self.status_expires_at = None;
         }
 
         egui::Panel::top("toolbar")
