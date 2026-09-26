@@ -1,21 +1,19 @@
 use eframe::egui::{self, Pos2};
 
-#[derive(PartialEq)]
-pub(crate) enum Tool {
-    None,
+#[derive(Clone, Copy, PartialEq)]
+pub(crate) enum DrawTool {
     Pen,
     Highlighter,
 }
 
-impl Tool {
-    pub fn drawing_properties(&self) -> (egui::Color32, f32) {
+impl DrawTool {
+    pub fn drawing_properties(self) -> (egui::Color32, f32) {
         match self {
-            Tool::Pen => (egui::Color32::RED, 3.0),
-            Tool::Highlighter => (
+            DrawTool::Pen => (egui::Color32::RED, 3.0),
+            DrawTool::Highlighter => (
                 egui::Color32::from_rgba_premultiplied(255, 255, 0, 80),
                 24.0,
             ),
-            Tool::None => unreachable!("drawing_properties called on Tool::None"),
         }
     }
 }

@@ -13,7 +13,7 @@ mod types;
 
 use self::draw::bake_strokes;
 use self::export::{copy_to_clipboard, save_to_file};
-use self::types::{Stroke, Tool};
+use self::types::{DrawTool, Stroke};
 
 /// Crops an RgbaImage to the given egui::Rect region.
 /// Coordinates are clamped to image bounds. Returns a 0×0 image if the
@@ -83,7 +83,7 @@ pub fn run_editor(image: RgbaImage, auto_save_msg: Option<String>) -> Result<Edi
 pub struct EditorApp {
     texture: TextureHandle,
     original_image: RgbaImage,
-    active_tool: Tool,
+    active_tool: Option<DrawTool>,
     strokes: Vec<Stroke>,
     current_stroke: Option<Stroke>,
     status_message: Option<String>,
@@ -112,7 +112,7 @@ impl EditorApp {
         Self {
             texture,
             original_image: img,
-            active_tool: Tool::None,
+            active_tool: None,
             strokes: Vec::new(),
             current_stroke: None,
             status_message,
@@ -124,6 +124,14 @@ impl EditorApp {
     fn set_status(&mut self, ctx: &egui::Context, msg: String) {
         self.status_message = Some(msg);
         self.status_set_at = ctx.input(|i| i.time);
+    }
+
+    fn toggle_tool(&mut self, tool: DrawTool) {
+        self.active_tool = if self.active_tool == Some(tool) {
+            None
+        } else {
+            Some(tool)
+        };
     }
 
     fn bake_and_export(&self) -> RgbaImage {
@@ -166,29 +174,21 @@ impl eframe::App for EditorApp {
 
                     let pen_btn = ui.add_sized(
                         [72.0, 34.0],
-                        egui::Button::selectable(self.active_tool == Tool::Pen, "Pen"),
+                        egui::Button::selectable(self.active_tool == Some(DrawTool::Pen), "Pen"),
                     );
                     if pen_btn.clicked() {
-                        self.active_tool = if self.active_tool == Tool::Pen {
-                            Tool::None
-                        } else {
-                            Tool::Pen
-                        };
+                        self.toggle_tool(DrawTool::Pen);
                     }
 
                     let hl_btn = ui.add_sized(
                         [104.0, 34.0],
                         egui::Button::selectable(
-                            self.active_tool == Tool::Highlighter,
+                            self.active_tool == Some(DrawTool::Highlighter),
                             "Highlighter",
                         ),
                     );
                     if hl_btn.clicked() {
-                        self.active_tool = if self.active_tool == Tool::Highlighter {
-                            Tool::None
-                        } else {
-                            Tool::Highlighter
-                        };
+                        self.toggle_tool(DrawTool::Highlighter);
                     }
 
                     let clear_btn = ui.add_sized([72.0, 34.0], egui::Button::new("Clear"));
@@ -262,7 +262,7 @@ impl eframe::App for EditorApp {
                     paint_stroke(ui, stroke, image_rect);
                 }
 
-                if self.active_tool != Tool::None {
+                if let Some(tool) = self.active_tool {
                     let response =
                         ui.interact(image_rect, ui.next_auto_id(), Sense::click_and_drag());
 
@@ -270,7 +270,7 @@ impl eframe::App for EditorApp {
                         && let Some(pos) = response.interact_pointer_pos()
                     {
                         let normalized = screen_to_image(pos, image_rect);
-                        let (color, thickness) = self.active_tool.drawing_properties();
+                        let (color, thickness) = tool.drawing_properties();
                         self.current_stroke = Some(Stroke {
                             points: vec![normalized],
                             color,
