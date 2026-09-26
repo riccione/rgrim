@@ -1,4 +1,4 @@
-use rgrim::capture::capture_primary_monitor;
+use rgrim::capture::{capture_primary_monitor, capture_settled_monitor};
 use std::path::Path;
 
 #[test]
@@ -38,5 +38,19 @@ fn test_screen_capture_engine() {
         "Successfully captured screen '{}' ({})",
         captured.name,
         output_path.display()
+    );
+}
+
+#[test]
+#[ignore]
+fn test_settled_capture_matches_direct_capture_geometry() {
+    let settled = capture_settled_monitor()
+        .expect("Settled capture failed! Check OS screen recording permissions");
+    let direct = capture_primary_monitor().expect("Direct capture failed");
+
+    assert_eq!(
+        settled.image.dimensions(),
+        direct.image.dimensions(),
+        "Settled capture must cover the same monitor geometry"
     );
 }
