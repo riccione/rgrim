@@ -60,7 +60,7 @@ pub(crate) fn copy_to_clipboard(image: &RgbaImage) -> Result<()> {
 
 pub(crate) fn save_to_file(image: &RgbaImage) -> Result<String> {
     let output_dir = crate::export::get_screenshot_directory();
-    std::fs::create_dir_all(&output_dir)?;
+    std::fs::create_dir_all(output_dir)?;
 
     let filename = crate::export::generate_screenshot_filename();
     let path = output_dir.join(&filename);
