@@ -18,7 +18,7 @@ pre-release-commit-message = "chore: release v{{version}}"
 tag-name = "v{{version}}"
 
 # Automatically push the commit and the tag to your origin remote
-push = true
+push = false
 
 # Sign the git commit and tag (requires GPG/SSH signing set up in git)
 sign-commit = true
