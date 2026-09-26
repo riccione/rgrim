@@ -161,7 +161,8 @@ impl eframe::App for SniperOverlay {
                 {
                     let mut button_pos = sel.left_bottom() + egui::vec2(10.0, 10.0);
                     if button_pos.y + 40.0 > content_rect.bottom() {
-                        button_pos = sel.left_top() - egui::vec2(-10.0, 45.0);
+                        // Not enough room below the selection: float the toolbar above it.
+                        button_pos = sel.left_top() + egui::vec2(10.0, -45.0);
                     }
 
                     egui::Area::new(egui::Id::new("sniper_toolbar"))
