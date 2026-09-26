@@ -1,4 +1,5 @@
 use anyhow::{Result, anyhow};
+use image::RgbaImage;
 
 use rgrim::capture::{capture_primary_monitor, capture_settled_monitor};
 use rgrim::editor::{EditorOutcome, crop_image, run_editor};
@@ -32,27 +33,7 @@ fn trigger_instant_capture_flow() -> Result<()> {
 
         let cropped = crop_image(&captured.image, &region);
 
-        let save_dir = get_screenshot_directory();
-        let auto_save_msg = match std::fs::create_dir_all(&save_dir) {
-            Ok(()) => {
-                let filename = generate_screenshot_filename();
-                let full_path = save_dir.join(&filename);
-                match cropped.save(&full_path) {
-                    Ok(()) => {
-                        let msg = format!("Screenshot saved to {}", full_path.display());
-                        Some(msg)
-                    }
-                    Err(e) => {
-                        eprintln!("Auto-save failed: {}", e);
-                        None
-                    }
-                }
-            }
-            Err(e) => {
-                eprintln!("Failed to create screenshot directory: {}", e);
-                None
-            }
-        };
+        let auto_save_msg = try_auto_save(&cropped);
 
         match run_editor(cropped, auto_save_msg)? {
             EditorOutcome::NewCapture => {
@@ -64,6 +45,23 @@ fn trigger_instant_capture_flow() -> Result<()> {
             EditorOutcome::Closed => return Ok(()),
         }
     }
+}
+
+/// Best-effort auto-save of the cropped screenshot. Logs and returns
+/// `None` on any failure, since the editor can still save manually.
+fn try_auto_save(cropped: &RgbaImage) -> Option<String> {
+    let save_dir = get_screenshot_directory();
+    std::fs::create_dir_all(&save_dir)
+        .inspect_err(|e| eprintln!("Failed to create screenshot directory: {e}"))
+        .ok()?;
+
+    let full_path = save_dir.join(generate_screenshot_filename());
+    cropped
+        .save(&full_path)
+        .inspect_err(|e| eprintln!("Auto-save failed: {e}"))
+        .ok()?;
+
+    Some(format!("Screenshot saved to {}", full_path.display()))
 }
 
 fn run_dashboard_interface() -> Result<()> {
