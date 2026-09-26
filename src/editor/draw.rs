@@ -8,7 +8,7 @@ pub(crate) fn bake_strokes(image: &RgbaImage, strokes: &[Stroke]) -> RgbaImage {
     let mut output = image.clone();
 
     for stroke in strokes {
-        if stroke.points.len() < 2 {
+        if stroke.points.is_empty() {
             continue;
         }
 
@@ -24,6 +24,13 @@ pub(crate) fn bake_strokes(image: &RgbaImage, strokes: &[Stroke]) -> RgbaImage {
             .collect();
 
         let radius = (stroke.thickness / 2.0).ceil() as i32;
+
+        // Click-only stroke (a drag that recorded one point): stamp a single dot.
+        if mapped.len() == 1 {
+            let (x, y) = mapped[0];
+            draw_filled_circle(&mut output, x, y, radius, stroke.color);
+            continue;
+        }
 
         for i in 1..mapped.len() {
             draw_thick_segment(&mut output, mapped[i - 1], mapped[i], radius, stroke.color);
@@ -96,9 +103,9 @@ fn blend_pixel(pixel: &mut image::Rgba<u8>, color: Color32) {
 
 #[cfg(test)]
 mod tests {
-    use super::blend_pixel;
-    use eframe::egui::Color32;
-    use image::Rgba;
+    use super::{Stroke, bake_strokes, blend_pixel};
+    use eframe::egui::{Color32, Pos2};
+    use image::{Rgba, RgbaImage};
 
     fn blend(bg: [u8; 4], color: Color32) -> [u8; 4] {
         let mut px = Rgba(bg);
@@ -130,5 +137,23 @@ mod tests {
         let bright = Color32::from_rgba_unmultiplied(255, 255, 255, 254);
         // A wrapping implementation would land below 255 here.
         assert_eq!(blend([255, 255, 255, 255], bright), [255, 255, 255, 255]);
+    }
+
+    #[test]
+    fn single_point_stroke_bakes_a_dot() {
+        let base = RgbaImage::from_pixel(32, 32, Rgba([0, 0, 0, 255]));
+        let stroke = Stroke {
+            points: vec![Pos2::new(0.5, 0.5)],
+            color: Color32::RED,
+            thickness: 5.0,
+        };
+
+        let out = bake_strokes(&base, std::slice::from_ref(&stroke));
+
+        // radius = ceil(5 / 2) = 3, so center and the dx == 3 rim are stamped...
+        assert_eq!(out.get_pixel(16, 16).0, [255, 0, 0, 255]);
+        assert_eq!(out.get_pixel(19, 16).0, [255, 0, 0, 255]);
+        // ...and beyond it the background is untouched.
+        assert_eq!(out.get_pixel(26, 16).0, [0, 0, 0, 255]);
     }
 }
