@@ -79,7 +79,8 @@ fn run_dashboard_interface() -> Result<()> {
     eframe::run_native(
         "rgrim Dashboard",
         native_options,
-        Box::new(move |_cc| {
+        Box::new(move |cc| {
+            rgrim::style::apply_font_scale(&cc.egui_ctx, 1.2);
             Ok(Box::new(DashboardApp {
                 trigger_capture: capture_triggered_clone,
             }))
@@ -99,8 +100,9 @@ struct DashboardApp {
 }
 
 impl eframe::App for DashboardApp {
-    #[allow(deprecated)]
-    fn update(&mut self, ctx: &eframe::egui::Context, _frame: &mut eframe::Frame) {
+    fn ui(&mut self, ui: &mut eframe::egui::Ui, _frame: &mut eframe::Frame) {
+        let ctx = ui.ctx().clone();
+
         if ctx.input(|i| {
             i.key_pressed(eframe::egui::Key::Escape) || i.key_pressed(eframe::egui::Key::Q)
         }) {
@@ -108,7 +110,7 @@ impl eframe::App for DashboardApp {
             return;
         }
 
-        eframe::egui::CentralPanel::default().show(ctx, |ui| {
+        eframe::egui::CentralPanel::default().show(ui, |ui| {
             ui.vertical_centered(|ui| {
                 ui.heading("📸 rgrim Screen Utility");
                 ui.label("A lightweight, cross-platform sniper annotation engine.");
@@ -130,10 +132,8 @@ impl eframe::App for DashboardApp {
             ui.label(
                 eframe::egui::RichText::new("Esc / Q — Close")
                     .color(eframe::egui::Color32::GRAY)
-                    .size(11.0),
+                    .size(13.0),
             );
         });
     }
-
-    fn ui(&mut self, _ui: &mut eframe::egui::Ui, _frame: &mut eframe::Frame) {}
 }
