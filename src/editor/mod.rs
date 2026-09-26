@@ -55,7 +55,6 @@ pub fn run_editor(image: RgbaImage, auto_save_msg: Option<String>) -> Result<Edi
         ..Default::default()
     };
 
-    let mut image_data = Some(image);
     let new_capture = Arc::new(AtomicBool::new(false));
     let new_capture_clone = new_capture.clone();
 
@@ -63,10 +62,9 @@ pub fn run_editor(image: RgbaImage, auto_save_msg: Option<String>) -> Result<Edi
         "rgrim-editor",
         native_options,
         Box::new(move |cc| {
-            let img = image_data.take().expect("App state consumed twice");
             Ok(Box::new(EditorApp::new(
                 &cc.egui_ctx,
-                img,
+                image,
                 auto_save_msg,
                 new_capture_clone,
             )))
