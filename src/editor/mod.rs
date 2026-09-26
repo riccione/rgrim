@@ -312,6 +312,17 @@ fn screen_to_image(screen_pos: Pos2, image_rect: Rect) -> Pos2 {
 }
 
 fn paint_stroke(ui: &mut egui::Ui, stroke: &Stroke, image_rect: Rect) {
+    if stroke.points.len() == 1 {
+        let p = stroke.points[0];
+        let center = Pos2::new(
+            image_rect.min.x + p.x * image_rect.width(),
+            image_rect.min.y + p.y * image_rect.height(),
+        );
+        ui.painter()
+            .circle_filled(center, (stroke.thickness / 2.0).ceil(), stroke.color);
+        return;
+    }
+
     let mut points = stroke.points.iter().map(|p| {
         Pos2::new(
             image_rect.min.x + p.x * image_rect.width(),
