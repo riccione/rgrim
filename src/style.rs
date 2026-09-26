@@ -1,3 +1,5 @@
+//! Shared egui styling helpers.
+
 use eframe::egui::{Context, Theme};
 
 /// Scales every named text style (body, button, heading, ...) by `factor`

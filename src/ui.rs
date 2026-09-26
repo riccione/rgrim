@@ -1,3 +1,5 @@
+//! Full-screen sniper region-selection overlay.
+
 use anyhow::{Context, Result};
 use eframe::egui::{
     self, ColorImage, CornerRadius, Pos2, Rect, Sense, StrokeKind, TextureHandle, TextureOptions,

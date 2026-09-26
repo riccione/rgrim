@@ -1,3 +1,5 @@
+//! Monitor screen capture (backed by xcap).
+
 use std::time::{Duration, Instant};
 
 use anyhow::{Context, Result, anyhow};
@@ -14,11 +16,16 @@ const SETTLE_POLL: Duration = Duration::from_millis(40);
 /// we hand back the newest frame rather than blocking indefinitely.
 const SETTLE_MAX_WAIT: Duration = Duration::from_millis(1000);
 
+/// One frame grabbed from a monitor.
 pub struct CapturedScreen {
+    /// Display name as reported by the OS (e.g. `eDP-1`).
     pub name: String,
+    /// Raw RGBA pixels at the monitor's native resolution.
     pub image: RgbaImage,
 }
 
+/// Captures the primary monitor, falling back to the first enumerated
+/// monitor when none is flagged primary.
 pub fn capture_primary_monitor() -> Result<CapturedScreen> {
     let monitors = Monitor::all().context("Failed to list monitors")?;
 
@@ -52,7 +59,7 @@ pub fn capture_primary_monitor() -> Result<CapturedScreen> {
 /// keep rendering the dying window (fade-out animations), so grabbing
 /// immediately can bleed it into the next capture. A blind sleep is
 /// either too short on slow compositors or wasted on fast ones; instead
-/// poll until the screen stops changing, with [`SETTLE_MAX_WAIT`] as the
+/// poll until the screen stops changing, with `SETTLE_MAX_WAIT` as the
 /// animated-desktop bail-out (newest frame returned on timeout).
 pub fn capture_settled_monitor() -> Result<CapturedScreen> {
     let start = Instant::now();

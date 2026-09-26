@@ -1,3 +1,5 @@
+//! Screenshot destination and filename resolution.
+
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
 
