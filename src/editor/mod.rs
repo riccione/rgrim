@@ -1,3 +1,5 @@
+//! Annotation editor window: tools, canvas, and export.
+
 use eframe::egui::{self, ColorImage, Pos2, Rect, Sense, TextureHandle, TextureOptions, Vec2};
 use image::RgbaImage;
 use image::imageops;
@@ -82,6 +84,10 @@ pub fn run_editor(image: RgbaImage, auto_save_msg: Option<String>) -> Result<Edi
     }
 }
 
+/// Annotation editor window: pen/highlighter toolbar over the crop
+/// preview, with copy/save export.
+///
+/// Launched via [`run_editor`]; not meant to be constructed directly.
 pub struct EditorApp {
     texture: TextureHandle,
     original_image: RgbaImage,
@@ -97,6 +103,8 @@ pub struct EditorApp {
 }
 
 impl EditorApp {
+    /// Uploads `img` as the canvas texture and seeds the status bar
+    /// with `status_msg` (if any) as a sticky message.
     pub fn new(
         ctx: &egui::Context,
         img: RgbaImage,
