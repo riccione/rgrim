@@ -1,6 +1,6 @@
 use std::time::{Duration, Instant};
 
-use anyhow::{Result, anyhow};
+use anyhow::{Context, Result, anyhow};
 use image::{DynamicImage, RgbaImage};
 use xcap::Monitor;
 
@@ -20,7 +20,7 @@ pub struct CapturedScreen {
 }
 
 pub fn capture_primary_monitor() -> Result<CapturedScreen> {
-    let monitors = Monitor::all().map_err(|e| anyhow!("Failed to list monitors: {}", e))?;
+    let monitors = Monitor::all().context("Failed to list monitors")?;
 
     let primary = monitors
         .iter()
@@ -30,13 +30,9 @@ pub fn capture_primary_monitor() -> Result<CapturedScreen> {
 
     let monitor_name = primary.name()?;
 
-    let xcap_image = primary.capture_image().map_err(|e| {
-        anyhow!(
-            "Hardware capture failed for monitor '{}': {}",
-            monitor_name,
-            e
-        )
-    })?;
+    let xcap_image = primary
+        .capture_image()
+        .with_context(|| format!("Hardware capture failed for monitor '{}'", monitor_name))?;
 
     // Convert xcap's image wrapper into a standard image::DynamicImage
     // This automatically corrects pixel formats, padding, and row strides.

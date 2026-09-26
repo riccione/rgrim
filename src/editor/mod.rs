@@ -2,7 +2,7 @@ use eframe::egui::{self, ColorImage, Pos2, Rect, Sense, TextureHandle, TextureOp
 use image::RgbaImage;
 use image::imageops;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -72,7 +72,8 @@ pub fn run_editor(image: RgbaImage, auto_save_msg: Option<String>) -> Result<Edi
                 new_capture_clone,
             )))
         }),
-    )?;
+    )
+    .context("Editor failed")?;
 
     if new_capture.load(Ordering::Relaxed) {
         Ok(EditorOutcome::NewCapture)
