@@ -83,18 +83,52 @@ fn draw_filled_circle(img: &mut RgbaImage, cx: i32, cy: i32, r: i32, color: Colo
 }
 
 fn blend_pixel(pixel: &mut image::Rgba<u8>, color: Color32) {
-    let src = [color.r(), color.g(), color.b(), color.a()];
-    if src[3] == 255 {
-        *pixel = image::Rgba([src[0], src[1], src[2], 255]);
-    } else if src[3] > 0 {
-        let a = src[3] as f32 / 255.0;
-        let inv = 1.0 - a;
-        let d = pixel.0;
-        pixel.0 = [
-            (src[0] as f32 * a + d[0] as f32 * inv) as u8,
-            (src[1] as f32 * a + d[1] as f32 * inv) as u8,
-            (src[2] as f32 * a + d[2] as f32 * inv) as u8,
-            255,
-        ];
+    // Color32 components are premultiplied (ecolor's invariant), so
+    // source-over onto an opaque destination is out = src + dst * (1 - a).
+    // For valid premultiplied colors (src <= a) this can never exceed 255,
+    // and a == 0 / a == 255 fall out as no-op / overwrite without specials.
+    let inv = 255 - color.a() as u32;
+    let d = &mut pixel.0;
+    d[0] = (color.r() as u32 + (d[0] as u32 * inv + 127) / 255) as u8;
+    d[1] = (color.g() as u32 + (d[1] as u32 * inv + 127) / 255) as u8;
+    d[2] = (color.b() as u32 + (d[2] as u32 * inv + 127) / 255) as u8;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::blend_pixel;
+    use eframe::egui::Color32;
+    use image::Rgba;
+
+    fn blend(bg: [u8; 4], color: Color32) -> [u8; 4] {
+        let mut px = Rgba(bg);
+        blend_pixel(&mut px, color);
+        px.0
+    }
+
+    #[test]
+    fn transparent_leaves_pixel_untouched() {
+        let c = Color32::from_rgba_unmultiplied(255, 0, 0, 0);
+        assert_eq!(blend([10, 20, 30, 255], c), [10, 20, 30, 255]);
+    }
+
+    #[test]
+    fn opaque_overwrites() {
+        let c = Color32::from_rgb(9, 8, 7);
+        assert_eq!(blend([10, 20, 30, 255], c), [9, 8, 7, 255]);
+    }
+
+    #[test]
+    fn highlighter_blends_as_31_percent_yellow() {
+        let hl = Color32::from_rgba_unmultiplied(255, 255, 0, 80);
+        assert_eq!(blend([255, 255, 255, 255], hl), [255, 255, 175, 255]);
+        assert_eq!(blend([0, 0, 0, 255], hl), [80, 80, 0, 255]);
+    }
+
+    #[test]
+    fn premultiplied_source_over_never_overflows() {
+        let bright = Color32::from_rgba_unmultiplied(255, 255, 255, 254);
+        // A wrapping implementation would land below 255 here.
+        assert_eq!(blend([255, 255, 255, 255], bright), [255, 255, 255, 255]);
     }
 }
