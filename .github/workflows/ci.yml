@@ -1,10 +1,11 @@
+---
 name: CI
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
   pull_request:
-    branches: [ main, master ]
+    branches: [main, master]
   workflow_dispatch:
 
 permissions:
@@ -12,7 +13,7 @@ permissions:
 
 jobs:
   ci:
-    uses: riccione/github-workflows/.github/workflows/rust-ci.yml@v3
+    uses: riccione/github-workflows/.github/workflows/rust-ci.yml@a42157e21f91d87ff97e4a6a30f431f687052064
     with:
       apt_packages: >-
         pkg-config
