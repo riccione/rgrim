@@ -209,7 +209,5 @@ impl eframe::App for SniperOverlay {
                     egui::StrokeKind::Inside,
                 );
             });
-
-        ctx.request_repaint();
     }
 }
