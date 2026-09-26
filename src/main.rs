@@ -1,4 +1,4 @@
-use anyhow::{Result, anyhow};
+use anyhow::{Context, Result};
 use image::RgbaImage;
 
 use rgrim::capture::{capture_primary_monitor, capture_settled_monitor};
@@ -85,7 +85,7 @@ fn run_dashboard_interface() -> Result<()> {
             }))
         }),
     )
-    .map_err(|e| anyhow!("Dashboard failure: {}", e))?;
+    .context("Dashboard failure")?;
 
     if capture_triggered.load(std::sync::atomic::Ordering::Relaxed) {
         trigger_instant_capture_flow()?;

@@ -4,7 +4,7 @@ use std::process::{Command, Stdio};
 use image::ImageEncoder;
 use image::RgbaImage;
 
-use anyhow::{Result, anyhow};
+use anyhow::{Context, Result, anyhow};
 
 pub(crate) fn copy_to_clipboard(image: &RgbaImage) -> Result<()> {
     let w = image.width() as usize;
@@ -34,19 +34,17 @@ pub(crate) fn copy_to_clipboard(image: &RgbaImage) -> Result<()> {
             h as u32,
             image::ExtendedColorType::Rgba8,
         )
-        .map_err(|e| anyhow!("Failed to encode clipboard buffer to PNG: {}", e))?;
+        .context("Failed to encode clipboard buffer to PNG")?;
 
     let mut child = Command::new("wl-copy")
         .arg("--type")
         .arg("image/png")
         .stdin(Stdio::piped())
         .spawn()
-        .map_err(|e| {
-            anyhow!(
-                "Both arboard and 'wl-copy' failed. If on a pure Wayland compositor, ensure 'wl-clipboard' is installed: {}",
-                e
-            )
-        })?;
+        .context(
+            "Both arboard and 'wl-copy' failed. \
+             If on a pure Wayland compositor, ensure 'wl-clipboard' is installed",
+        )?;
 
     if let Some(mut stdin) = child.stdin.take() {
         stdin.write_all(&png_bytes)?;
