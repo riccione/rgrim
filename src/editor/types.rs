@@ -30,19 +30,24 @@ impl DrawTool {
         }
     }
 
-    /// Combines a user-picked, opaque swatch color with the tool's fixed
-    /// opacity.
+    /// Combines a swatch color with the tool's fixed opacity. The pick is
+    /// unmultiplied first, so translucent inputs still yield the intended
+    /// hue; opaque picks pass through byte-identical.
     pub fn stroke_color(self, picked: egui::Color32) -> egui::Color32 {
-        egui::Color32::from_rgba_unmultiplied(picked.r(), picked.g(), picked.b(), self.alpha())
+        let [r, g, b, _] = picked.to_srgba_unmultiplied();
+        egui::Color32::from_rgba_unmultiplied(r, g, b, self.alpha())
     }
 }
 
 /// User-selectable colors for each drawing tool. Survives across
 /// capture sessions so the next "New" screenshot keeps the chosen hues.
+///
+/// Colors are kept opaque: the editor's color picker is the only writer,
+/// and tools apply their own opacity when creating strokes.
 #[derive(Clone, Copy, PartialEq)]
 pub struct ToolPalette {
-    pub pen: egui::Color32,
-    pub highlighter: egui::Color32,
+    pen: egui::Color32,
+    highlighter: egui::Color32,
 }
 
 impl Default for ToolPalette {
@@ -96,6 +101,17 @@ mod tests {
         let picked = Color32::from_rgb(0, 128, 255);
 
         assert_eq!(DrawTool::Pen.stroke_color(picked), picked);
+    }
+
+    #[test]
+    fn translucent_picks_are_unmultiplied_before_tool_opacity() {
+        let picked = Color32::from_rgba_unmultiplied(255, 0, 0, 128);
+
+        assert_eq!(DrawTool::Pen.stroke_color(picked), Color32::RED);
+        assert_eq!(
+            DrawTool::Highlighter.stroke_color(picked),
+            Color32::from_rgba_unmultiplied(255, 0, 0, 80)
+        );
     }
 
     #[test]
