@@ -12,12 +12,13 @@ permissions:
 
 jobs:
   release:
-    uses: riccione/github-workflows/.github/workflows/rust-release.yml@0e7672a9c96dd4f8483ebb3e882a9e84c599a583
+    uses: riccione/github-workflows/.github/workflows/rust-release.yml@98a7ac9787f5ce96a088bd2058214a9ce12df2b2
     permissions:
       contents: write
       id-token: write
     with:
       bin_names: "rgrim"
+      build_musl: false
       tag: ${{ github.ref_name }}
       apt_packages: >-
         pkg-config
