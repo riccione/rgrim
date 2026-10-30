@@ -53,6 +53,18 @@ cargo build --release
 
 ---
 
+## Command-Line Flags
+
+| Flag | Description |
+| --- | --- |
+| `--gui` / `-g` | Open the dashboard window instead of starting a capture immediately |
+| `--delay <SECONDS>` / `-d <SECONDS>` | Wait before the first capture, e.g. `rgrim --delay 3` or `rgrim --delay=5`. A per-second countdown is printed while waiting. Only the first capture is delayed; captures started from the editor's **New** button happen immediately |
+| `--help` / `-h` | Print usage |
+
+The dashboard's capture buttons choose the delay per click: **Take Screenshot Now**, **Capture in 3 s**, and **Capture in 5 s** (`--delay` applies to non-GUI runs).
+
+---
+
 ## Global Keybindings
 
 ### 1. Sniper Mode Keybindings
