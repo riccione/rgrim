@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 use image::RgbaImage;
 
 use rgrim::capture::{capture_primary_monitor, capture_settled_monitor};
-use rgrim::editor::{EditorOutcome, crop_image, run_editor};
+use rgrim::editor::{EditorOutcome, ToolPalette, crop_image, run_editor};
 use rgrim::export::{generate_screenshot_filename, get_screenshot_directory};
 use rgrim::ui::run_sniper_overlay;
 
@@ -22,6 +22,7 @@ fn main() -> Result<()> {
 
 fn trigger_instant_capture_flow() -> Result<()> {
     let mut captured = capture_primary_monitor()?;
+    let mut palette = ToolPalette::default();
 
     loop {
         let rect = run_sniper_overlay(&captured.image)?;
@@ -35,7 +36,10 @@ fn trigger_instant_capture_flow() -> Result<()> {
 
         let auto_save_msg = try_auto_save(&cropped);
 
-        match run_editor(cropped, auto_save_msg)? {
+        let (outcome, updated_palette) = run_editor(cropped, auto_save_msg, palette)?;
+        palette = updated_palette;
+
+        match outcome {
             EditorOutcome::NewCapture => {
                 // The compositor may still be rendering the closed editor
                 // window; capture_settled_monitor() waits for stable output
