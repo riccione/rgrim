@@ -167,7 +167,7 @@ impl eframe::App for SniperOverlay {
                         button_pos = sel.left_top() + egui::vec2(10.0, -45.0);
                     }
 
-                    egui::Area::new(egui::Id::new("sniper_toolbar"))
+                    egui::Area::new(egui::Id::unique("sniper_toolbar"))
                         .fixed_pos(button_pos)
                         .order(egui::Order::Foreground)
                         .show(&ctx, |ui| {

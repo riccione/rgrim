@@ -33,9 +33,9 @@ strip = true # Automatically strip symbols and debug info from the binary
 
 [dependencies]
 anyhow = "1.0"
-arboard = "3.6"
+arboard = "3.7"
 chrono = "0.4"
 dirs = "7.0.0"
-eframe = "0.36"
+eframe = "0.37"
 image = { version = "0.25", default-features = false, features = ["png"] }
 xcap = "0.9"
