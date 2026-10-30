@@ -53,6 +53,18 @@ cargo build --release
 
 ---
 
+## Command-Line Flags
+
+| Flag | Description |
+| --- | --- |
+| `--gui` / `-g` | Open the dashboard window instead of starting a capture immediately |
+| `--delay <SECONDS>` / `-d <SECONDS>` | Wait before the first capture, e.g. `rgrim --delay 3` or `rgrim --delay=5`. A per-second countdown is printed while waiting. Only the first capture is delayed this way; later captures use the dashboard or editor delay buttons |
+| `--help` / `-h` | Print usage |
+
+The dashboard's capture buttons choose the delay per click: **Take Screenshot Now**, **Capture in 3 s**, and **Capture in 5 s** (`--delay` applies to non-GUI runs). The editor toolbar mirrors this with **In 3 s** and **In 5 s** re-capture buttons.
+
+---
+
 ## Global Keybindings
 
 ### 1. Sniper Mode Keybindings
@@ -72,6 +84,7 @@ Once selection captures finish, the sketch engine launches with a dedicated tool
 | Active Interaction | Mode / Tool Purpose |
 | --- | --- |
 | **New Button** | Discards the editor session and immediately re-enters sniper capture mode |
+| **In 3 s / In 5 s Buttons** | Discards the editor session and starts the next capture after the chosen delay, printing a countdown while waiting |
 | **Pen Button** | Sharp freehand illustration stroke ($3\text{px}$ profile) |
 | **Highlighter Button** | Semi-transparent highlight channel ($24\text{px}$ profile) |
 | **Color Swatch** | Click the swatch beside Pen or Highlighter to pick that tool's color; the highlighter keeps its fixed translucency and choices persist across New captures |
