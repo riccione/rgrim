@@ -72,8 +72,9 @@ Once selection captures finish, the sketch engine launches with a dedicated tool
 | Active Interaction | Mode / Tool Purpose |
 | --- | --- |
 | **New Button** | Discards the editor session and immediately re-enters sniper capture mode |
-| **Pen Button** | Sharp Red freehand illustration stroke ($3\text{px}$ profile) |
-| **Highlighter Button** | Semi-transparent yellow highlight channel ($24\text{px}$ profile) |
+| **Pen Button** | Sharp freehand illustration stroke ($3\text{px}$ profile) |
+| **Highlighter Button** | Semi-transparent highlight channel ($24\text{px}$ profile) |
+| **Color Swatch** | Click the swatch beside Pen or Highlighter to pick that tool's color; the highlighter keeps its fixed translucency and choices persist across New captures |
 | **Clear Button** | Completely flushes all vector stroke markers from active viewport |
 | **Copy Button** | Encapsulates visual matrix directly to system clipboards |
 | **Save Button** | Writes the customized composite out to targeted disk files |
