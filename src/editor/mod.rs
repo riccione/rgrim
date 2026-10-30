@@ -55,6 +55,12 @@ pub enum EditorOutcome {
     NewCapture { delay: Duration },
 }
 
+/// State the editor hands back to [`run_editor`] when its window closes.
+struct EditorExit {
+    palette: ToolPalette,
+    next_capture: Option<Duration>,
+}
+
 /// Runs the main editor window with toolbar and central canvas.
 /// `auto_save_msg` is shown in the status bar on launch if set.
 /// `palette` carries the user's tool colors in and the possibly
@@ -69,10 +75,11 @@ pub fn run_editor(
         ..Default::default()
     };
 
-    let new_capture = Arc::new(Mutex::new(None));
-    let new_capture_clone = new_capture.clone();
-    let palette = Arc::new(Mutex::new(palette));
-    let palette_clone = palette.clone();
+    let exit = Arc::new(Mutex::new(EditorExit {
+        palette,
+        next_capture: None,
+    }));
+    let exit_clone = exit.clone();
 
     eframe::run_native(
         "rgrim-editor",
@@ -82,17 +89,17 @@ pub fn run_editor(
                 &cc.egui_ctx,
                 image,
                 auto_save_msg,
-                new_capture_clone,
-                palette_clone,
+                palette,
+                exit_clone,
             )))
         }),
     )
     .context("Editor failed")?;
 
-    let palette = *palette.lock().unwrap();
-    match *new_capture.lock().unwrap() {
-        Some(delay) => Ok((EditorOutcome::NewCapture { delay }, palette)),
-        None => Ok((EditorOutcome::Closed, palette)),
+    let exit = exit.lock().unwrap();
+    match exit.next_capture {
+        Some(delay) => Ok((EditorOutcome::NewCapture { delay }, exit.palette)),
+        None => Ok((EditorOutcome::Closed, exit.palette)),
     }
 }
 
@@ -100,7 +107,7 @@ pub fn run_editor(
 /// preview, with copy/save export.
 ///
 /// Launched via [`run_editor`]; not meant to be constructed directly.
-pub struct EditorApp {
+pub(crate) struct EditorApp {
     texture: TextureHandle,
     original_image: RgbaImage,
     active_tool: Option<DrawTool>,
@@ -111,20 +118,20 @@ pub struct EditorApp {
     /// `None` means the message is sticky (e.g. the launch auto-save note)
     /// or there is no message at all.
     status_expires_at: Option<f64>,
-    new_capture: Arc<Mutex<Option<Duration>>>,
-    palette: Arc<Mutex<ToolPalette>>,
+    palette: ToolPalette,
+    exit: Arc<Mutex<EditorExit>>,
 }
 
 impl EditorApp {
     /// Uploads `img` as the canvas texture, seeds the status bar with
-    /// `status_msg` (if any) as a sticky message, and shares `palette`
-    /// with the caller so tool colors persist across sessions.
-    pub fn new(
+    /// `status_msg` (if any) as a sticky message, and keeps `exit` as
+    /// the one place results are handed back to [`run_editor`].
+    fn new(
         ctx: &egui::Context,
         img: RgbaImage,
         status_msg: Option<String>,
-        new_capture: Arc<Mutex<Option<Duration>>>,
-        palette: Arc<Mutex<ToolPalette>>,
+        palette: ToolPalette,
+        exit: Arc<Mutex<EditorExit>>,
     ) -> Self {
         let mut visuals = egui::Visuals::dark();
         visuals.window_corner_radius = egui::CornerRadius::from(8);
@@ -144,8 +151,8 @@ impl EditorApp {
             current_stroke: None,
             status_message,
             status_expires_at: None,
-            new_capture,
             palette,
+            exit,
         }
     }
 
@@ -155,7 +162,7 @@ impl EditorApp {
     }
 
     fn request_new_capture(&self, ctx: &egui::Context, delay: Duration) {
-        *self.new_capture.lock().unwrap() = Some(delay);
+        self.exit.lock().unwrap().next_capture = Some(delay);
         ctx.send_viewport_cmd(egui::ViewportCommand::Close);
     }
 
@@ -197,7 +204,7 @@ impl eframe::App for EditorApp {
             .show(ui, |ui| {
                 ui.horizontal(|ui| {
                     ui.add_space(4.0);
-                    let mut palette = *self.palette.lock().unwrap();
+                    let mut palette = self.palette;
 
                     let new_btn = ui.add_sized([72.0, 34.0], egui::Button::new("New"));
                     if new_btn.clicked() {
@@ -245,7 +252,10 @@ impl eframe::App for EditorApp {
                         palette.color_mut(DrawTool::Highlighter),
                         egui::color_picker::Alpha::Opaque,
                     );
-                    *self.palette.lock().unwrap() = palette;
+                    if palette != self.palette {
+                        self.palette = palette;
+                        self.exit.lock().unwrap().palette = palette;
+                    }
 
                     let clear_btn = ui.add_sized([72.0, 34.0], egui::Button::new("Clear"));
                     if clear_btn.clicked() {
@@ -326,7 +336,7 @@ impl eframe::App for EditorApp {
                         && let Some(pos) = response.interact_pointer_pos()
                     {
                         let normalized = screen_to_image(pos, image_rect);
-                        let color = tool.stroke_color(self.palette.lock().unwrap().color(tool));
+                        let color = tool.stroke_color(self.palette.color(tool));
                         let thickness = tool.thickness();
                         self.current_stroke = Some(Stroke {
                             points: vec![normalized],
