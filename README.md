@@ -19,7 +19,7 @@ A lightweight, high-performance, modular screen-capture and desktop annotation u
 ## Dependencies
 
 - **capture**: `xcap`, `image`, `anyhow`
-- **ui / editor**: `eframe` (egui 0.34), `image`
+- **ui / editor**: `eframe` (egui 0.37), `image`
 - **export**: `chrono`, `dirs`
 - **clipboard**: `arboard`, `wl-copy` (optional Wayland fallback)
 
