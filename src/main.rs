@@ -112,7 +112,8 @@ fn trigger_instant_capture_flow(delay: Duration) -> Result<()> {
         palette = updated_palette;
 
         match outcome {
-            EditorOutcome::NewCapture => {
+            EditorOutcome::NewCapture { delay } => {
+                wait_before_capture(delay);
                 // The compositor may still be rendering the closed editor
                 // window; capture_settled_monitor() waits for stable output
                 // instead of relying on a guessed delay.

@@ -6,8 +6,8 @@ use image::imageops;
 
 use anyhow::{Context, Result};
 
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
 
 mod draw;
 mod export;
@@ -51,7 +51,8 @@ pub enum EditorOutcome {
     /// Session ended normally (Escape / Q / window close).
     Closed,
     /// User clicked "New": the app should return to the capture/sniper state.
-    NewCapture,
+    /// `delay` is how long to wait before grabbing the next screenshot.
+    NewCapture { delay: Duration },
 }
 
 /// Runs the main editor window with toolbar and central canvas.
@@ -68,7 +69,7 @@ pub fn run_editor(
         ..Default::default()
     };
 
-    let new_capture = Arc::new(AtomicBool::new(false));
+    let new_capture = Arc::new(Mutex::new(None));
     let new_capture_clone = new_capture.clone();
     let palette = Arc::new(Mutex::new(palette));
     let palette_clone = palette.clone();
@@ -89,10 +90,9 @@ pub fn run_editor(
     .context("Editor failed")?;
 
     let palette = *palette.lock().unwrap();
-    if new_capture.load(Ordering::Relaxed) {
-        Ok((EditorOutcome::NewCapture, palette))
-    } else {
-        Ok((EditorOutcome::Closed, palette))
+    match *new_capture.lock().unwrap() {
+        Some(delay) => Ok((EditorOutcome::NewCapture { delay }, palette)),
+        None => Ok((EditorOutcome::Closed, palette)),
     }
 }
 
@@ -111,7 +111,7 @@ pub struct EditorApp {
     /// `None` means the message is sticky (e.g. the launch auto-save note)
     /// or there is no message at all.
     status_expires_at: Option<f64>,
-    new_capture: Arc<AtomicBool>,
+    new_capture: Arc<Mutex<Option<Duration>>>,
     palette: Arc<Mutex<ToolPalette>>,
 }
 
@@ -123,7 +123,7 @@ impl EditorApp {
         ctx: &egui::Context,
         img: RgbaImage,
         status_msg: Option<String>,
-        new_capture: Arc<AtomicBool>,
+        new_capture: Arc<Mutex<Option<Duration>>>,
         palette: Arc<Mutex<ToolPalette>>,
     ) -> Self {
         let mut visuals = egui::Visuals::dark();
@@ -152,6 +152,11 @@ impl EditorApp {
     fn set_status(&mut self, ctx: &egui::Context, msg: String) {
         self.status_message = Some(msg);
         self.status_expires_at = Some(ctx.input(|i| i.time) + STATUS_TIMEOUT_SECS);
+    }
+
+    fn request_new_capture(&self, ctx: &egui::Context, delay: Duration) {
+        *self.new_capture.lock().unwrap() = Some(delay);
+        ctx.send_viewport_cmd(egui::ViewportCommand::Close);
     }
 
     fn toggle_tool(&mut self, tool: DrawTool) {
@@ -196,8 +201,19 @@ impl eframe::App for EditorApp {
 
                     let new_btn = ui.add_sized([72.0, 34.0], egui::Button::new("New"));
                     if new_btn.clicked() {
-                        self.new_capture.store(true, Ordering::Relaxed);
-                        ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                        self.request_new_capture(&ctx, Duration::ZERO);
+                        return;
+                    }
+
+                    let new_3s_btn = ui.add_sized([72.0, 34.0], egui::Button::new("In 3 s"));
+                    if new_3s_btn.clicked() {
+                        self.request_new_capture(&ctx, Duration::from_secs(3));
+                        return;
+                    }
+
+                    let new_5s_btn = ui.add_sized([72.0, 34.0], egui::Button::new("In 5 s"));
+                    if new_5s_btn.clicked() {
+                        self.request_new_capture(&ctx, Duration::from_secs(5));
                         return;
                     }
 
