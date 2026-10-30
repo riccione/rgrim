@@ -1,18 +1,21 @@
 # rgrim
 
-A lightweight, high-performance, modular screen-capture and desktop annotation utility designed for Linux (X11 and Wayland/Sway), macOS, and Windows.
+**A lightweight, cross-platform screenshot tool with built-in annotation.**
 
-`rgrim` utilizes `xcap` for cross-platform hardware screen capture, features an instant, hardware-accelerated sniper selection area built on `egui`, and includes a responsive post-capture overlay drawing canvas.
+Capture your entire screen or select a specific region, annotate screenshots with a pen or highlighter, and copy or save the result.
 
----
+Designed for Linux (X11 and Wayland), macOS, and Windows.
 
 ## Features
 
-* **Instant Native Grab:** Captures the target monitor layer via hardware display buffers.
-* **Sniper Selection Mode:** Borderless, mouse-interactive crosshair bounding selection overlay.
-* **In-Memory Editing Canvas:** Non-destructive vector sketching suite directly over your capture.
-* **Dual-Action Export:** Seamless clipboard population alongside silent asynchronous automated file-system fallback saving.
-* **Cross-Platform System Notifications:** Native desktop toast confirmation alerts on successful saves across Linux, macOS, and Windows.
+- **Flexible screen capture:** Capture the entire screen or select a rectangular region.
+- **Built-in annotation:** Draw freehand or highlight important areas directly on your screenshots.
+- **Custom colors:** Choose colors independently for the pen and highlighter.
+- **Clipboard integration:** Copy your annotated screenshots directly to the system clipboard.
+- **Automatic file saving:** Save screenshots to your preferred directory.
+- **Delayed capture:** Schedule screenshots with a 3- or 5-second countdown.
+- **Desktop notifications:** Get notified when a screenshot is successfully saved.
+- **Cross-platform:** Works on Linux, macOS, and Windows.
 
 ---
 
@@ -165,35 +168,14 @@ To avoid heavy third-party automation tools, you can leverage Apple's native env
 
 ---
 
-## How to Contribute
+## Contributing
 
-We welcome contributions to `rgrim`! Please ensure your work aligns with our formatting and workflow structures:
+Contributions are welcome! Whether you're fixing a bug, improving documentation, or proposing a new feature, feel free to get involved.
 
-### 1. Branch Naming & Commit Style
-
-To maintain a clean project history, we strictly enforce the **Conventional Commits** specification for both branch naming and commit messages.
-
-* **Branches:** Use semantic prefixes followed by the ticket number or a short description (e.g., `feat/export-and-clipboard`, `fix/monitor-size`, `docs/update-readme`).
-* **Commits:** Structure messages cleanly using a structural indicator (e.g., `feat: add notify-rust tracking channel`, `fix(ui): resolve coordinate displacement bounds under wayland`).
-
-### 2. Pull Request Format Requirements
-
-When opening a Pull Request, the description must strictly include the following sections to assist reviewers:
-
-* **Clear Title & Context:** Use structured ticket brackets within the title layout (e.g., `[UI-145] Fix empty state in cart`).
-* **Essence of Changes:** Provide a brief explanation describing **what** was altered, **why** it was necessary, and **how** it was technically implemented.
-* **Traceability Links:** Include working links pointing to tracking tickets, bug reports, mockups, or related community discussions.
-* **Visual Evidence:** Attach relevant screenshots or recorded captures if your adjustments introduce changes to the UI layer.
-* **Self-Check Checklist:** Complete a validation checklist before requesting a peer review:
-* [ ] cargo check
-* [ ] cargo fmt
-* [ ] cargo build
-* [ ] Tested successfully in staging/local container environment.
-* [ ] Verified regression criteria and added regression tests.
-* [ ] Updated companion documentation assets accordingly.
+See [Contributing Guide](docs/CONTRIBUTING.md) for development workflow, branch naming, commit conventions, and pull request guidelines.
 
 ---
 
 ## License
 
-This project is licensed under the terms of the **Apache License 2.0**. For the full legal text detailing permissions, limitations, and liabilities, please consult the complete `LICENSE` file included in this repository.
+This project is licensed under the terms of the [**Apache License 2.0**](LICENSE).
