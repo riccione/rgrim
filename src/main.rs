@@ -143,13 +143,13 @@ fn try_auto_save(cropped: &RgbaImage) -> Option<String> {
 fn run_dashboard_interface() -> Result<()> {
     let native_options = eframe::NativeOptions {
         viewport: eframe::egui::ViewportBuilder::default()
-            .with_inner_size([400.0, 250.0])
+            .with_inner_size([420.0, 300.0])
             .with_resizable(false),
         ..Default::default()
     };
 
-    let capture_triggered = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
-    let capture_triggered_clone = capture_triggered.clone();
+    let capture_request = std::sync::Arc::new(std::sync::Mutex::new(None));
+    let capture_request_clone = capture_request.clone();
 
     eframe::run_native(
         "rgrim Dashboard",
@@ -157,21 +157,30 @@ fn run_dashboard_interface() -> Result<()> {
         Box::new(move |cc| {
             rgrim::style::apply_font_scale(&cc.egui_ctx, 1.2);
             Ok(Box::new(DashboardApp {
-                trigger_capture: capture_triggered_clone,
+                capture_request: capture_request_clone,
             }))
         }),
     )
     .context("Dashboard failure")?;
 
-    if capture_triggered.load(std::sync::atomic::Ordering::Relaxed) {
-        trigger_instant_capture_flow(Duration::ZERO)?;
+    if let Some(delay) = *capture_request.lock().unwrap() {
+        trigger_instant_capture_flow(delay)?;
     }
 
     Ok(())
 }
 
 struct DashboardApp {
-    trigger_capture: std::sync::Arc<std::sync::atomic::AtomicBool>,
+    /// `None` until a button asks for a capture; the value is the delay
+    /// before that capture starts.
+    capture_request: std::sync::Arc<std::sync::Mutex<Option<Duration>>>,
+}
+
+impl DashboardApp {
+    fn request_capture(&self, ctx: &eframe::egui::Context, delay: Duration) {
+        *self.capture_request.lock().unwrap() = Some(delay);
+        ctx.send_viewport_cmd(eframe::egui::ViewportCommand::Close);
+    }
 }
 
 impl eframe::App for DashboardApp {
@@ -197,11 +206,29 @@ impl eframe::App for DashboardApp {
             ui.label(" • Escape / Q : Instantly abort open overlays");
             ui.add_space(15.0);
 
-            if ui.button("⚡ Take Screenshot Now").clicked() {
-                self.trigger_capture
-                    .store(true, std::sync::atomic::Ordering::Relaxed);
-                ctx.send_viewport_cmd(eframe::egui::ViewportCommand::Close);
-            }
+            ui.vertical_centered(|ui| {
+                if ui
+                    .add_sized(
+                        [240.0, 30.0],
+                        eframe::egui::Button::new("⚡ Take Screenshot Now"),
+                    )
+                    .clicked()
+                {
+                    self.request_capture(&ctx, Duration::ZERO);
+                }
+                if ui
+                    .add_sized([240.0, 30.0], eframe::egui::Button::new("⏱ Capture in 3 s"))
+                    .clicked()
+                {
+                    self.request_capture(&ctx, Duration::from_secs(3));
+                }
+                if ui
+                    .add_sized([240.0, 30.0], eframe::egui::Button::new("⏱ Capture in 5 s"))
+                    .clicked()
+                {
+                    self.request_capture(&ctx, Duration::from_secs(5));
+                }
+            });
 
             ui.add_space(4.0);
             ui.label(
