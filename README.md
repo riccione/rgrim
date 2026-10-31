@@ -1,10 +1,18 @@
 # rgrim
 
+[![CI](https://github.com/riccione/rgrim/actions/workflows/ci.yml/badge.svg)](https://github.com/riccione/rgrim/actions)
+[![Release](https://img.shields.io/github/v/release/riccione/rgrim)](https://github.com/riccione/rgrim/releases)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+
 **A lightweight, cross-platform screenshot tool with built-in annotation.**
 
 Capture your entire screen or select a specific region, annotate screenshots with a pen or highlighter, and copy or save the result.
 
 Designed for Linux (X11 and Wayland), macOS, and Windows.
+
+<p align="center">
+  <img src="docs/assets/demo.gif" alt="rgrim screenshot capture and annotation demonstration" width="800">
+</p>
 
 ## Features
 
