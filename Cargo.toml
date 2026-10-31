@@ -1,12 +1,16 @@
 [package]
 name = "rgrim"
-version = "0.4.0"
+version = "0.5.0"
 edition = "2024"
 homepage = "https://github.com/riccione/rgrim"
 documentation = "https://github.com/riccione/rgrim"
 repository = "https://github.com/riccione/rgrim"
 
 [package.metadata.release]
+# We tag manually from `main` after the release PR is merged,
+# so cargo-release must never create the tag itself.
+tag = false
+
 # Prevent cargo-release from trying to upload to crates.io
 publish = false
 
@@ -23,6 +27,10 @@ push = false
 # Sign the git commit and tag (requires GPG/SSH signing set up in git)
 sign-commit = true
 sign-tag = true
+
+# Regenerate CHANGELOG.md with git-cliff before the release commit,
+# so the changelog update ships in the same commit as the version bump.
+pre-release-hook = ["git", "cliff", "-o", "CHANGELOG.md", "--tag", "v{{version}}"]
 
 [profile.release]
 opt-level = "z" # Size optimization
