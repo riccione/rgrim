@@ -4,6 +4,34 @@ All notable changes to `rgrim` will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-10-31
+
+### Documentation
+
+- Describe the color swatches in the editor toolbar
+- Document CLI flags and delayed capture
+- Document the editor delay buttons
+- Simplify README and extract contributing guide
+- Add CI/release badges and demo GIF preview to README
+- Update installation instructions
+
+### Features
+
+- *(editor)* Let users choose pen and highlighter colors
+- *(cli)* Add --delay to postpone the first capture
+- *(dashboard)* Add delayed capture buttons
+- *(editor)* Offer delayed re-captures from the toolbar
+
+### Miscellaneous Tasks
+
+- Grant OIDC permissions to release workflow (#73)
+- Use Ubuntu 24.04 for Linux GNU builds (#75)
+- *(release)* Configure cargo-release for manual tagging and git-cliff
+
+### Refactoring
+
+- *(editor)* Own palette state and hand results back once
+- *(editor)* Enforce the palette's opaque-color invariant
 ## [0.4.0] - 2026-09-26
 
 ### Bug Fixes
@@ -38,6 +66,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Pin Rust toolchain to stable via rust-toolchain.toml
 - Pin reusable workflows to immutable commit SHAs
 - Add dependabot for cargo and github-actions
+- Add CHANGELOG
+- *(release)* Fix path to rust-release reusable workflow
 
 ### Other
 
