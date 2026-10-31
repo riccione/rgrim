@@ -27,40 +27,61 @@ Designed for Linux (X11 and Wayland), macOS, and Windows.
 
 ---
 
-## Dependencies
+## Installation
 
-- **capture**: `xcap`, `image`, `anyhow`
-- **ui / editor**: `eframe` (egui 0.37), `image`
-- **export**: `chrono`, `dirs`
-- **clipboard**: `arboard`, `wl-copy` (optional Wayland fallback)
+There are two ways to install `rgrim`: download a prebuilt binary or build it from source.
 
----
+### Option 1: Download a prebuilt binary (Recommended)
 
-## Installation & Dependencies
+Download the latest release for your operating system and architecture from [GitHub Releases](https://github.com/riccione/rgrim/releases).
 
-Ensure your compiler target satisfies the underlying platform-specific requirements.
+1. Open [GitHub Releases](https://github.com/riccione/rgrim/releases).
+2. Select the latest release.
+3. Download the archive matching your operating system and architecture.
+4. Extract the archive and run the `rgrim` executable.
 
-### Linux Prerequisites
-When running on Linux (X11/Wayland), ensure the development packages for `xcb`, `libxkbcommon`.
+On Linux, you may need to make the downloaded binary executable:
 
 ```bash
-# On Debian/Ubuntu based environments
-sudo apt update && sudo apt install -y \
+chmod +x rgrim
+./rgrim
+```
+
+### Option 2: Build from source
+
+Building from source requires a working Rust development environment and platform-specific dependencies.
+
+**Prerequisites:**
+
+- [Rust toolchain](https://www.rust-lang.org/tools/install) (including Cargo).
+- Required development libraries for your operating system.
+
+**Linux dependencies:**
+
+On Debian/Ubuntu-based distributions:
+
+```bash
+sudo apt update
+sudo apt install -y \
     libxcb1-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev \
     libxkbcommon-dev libdbus-1-dev wl-clipboard
-
 ```
 
-### Build from Source
-
-Clone the project space and build using the cargo package suite:
+**Build:**
 
 ```bash
-git clone [https://github.com/riccione/rgrim.git](https://github.com/riccione/rgrim.git)
+git clone https://github.com/riccione/rgrim.git
 cd rgrim
 cargo build --release
-
 ```
+
+The compiled executable will be available at:
+
+```text
+target/release/rgrim
+```
+
+For platform-specific build requirements, consult the project's documentation.
 
 ---
 
@@ -173,6 +194,15 @@ To avoid heavy third-party automation tools, you can leverage Apple's native env
 4. Inside the right-hand options configuration drawer, toggle **Use as Quick Action**.
 5. Check **Provide Keyboard Shortcut** and bind it directly to `Cmd + Shift + G` (or `Opt + Shift + G`).
 6. *Note: Ensure you grant the executable **Accessibility** and **Screen Recording** permissions under macOS System Settings upon your first launch.*
+
+---
+
+## Dependencies
+
+- **capture**: `xcap`, `image`, `anyhow`
+- **ui / editor**: `eframe` (egui 0.37), `image`
+- **export**: `chrono`, `dirs`
+- **clipboard**: `arboard`, `wl-copy` (optional Wayland fallback)
 
 ---
 
