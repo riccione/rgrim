@@ -24,34 +24,44 @@ pub struct CapturedScreen {
     pub image: RgbaImage,
 }
 
-/// Captures the primary monitor, falling back to the first enumerated
-/// monitor when none is flagged primary.
-pub fn capture_primary_monitor() -> Result<CapturedScreen> {
+/// Enumerates monitors and returns the primary one, falling back to the
+/// first enumerated monitor when none is flagged primary.
+fn primary_monitor() -> Result<Monitor> {
     let monitors = Monitor::all().context("Failed to list monitors")?;
 
-    let primary = monitors
+    let index = monitors
         .iter()
-        .find(|m| m.is_primary().unwrap_or(false))
-        .or_else(|| monitors.first())
-        .ok_or_else(|| anyhow!("No monitors detected on the system"))?;
+        .position(|monitor| monitor.is_primary().unwrap_or(false))
+        .unwrap_or(0);
 
-    let monitor_name = primary.name()?;
+    monitors
+        .into_iter()
+        .nth(index)
+        .ok_or_else(|| anyhow!("No monitors detected on the system"))
+}
 
-    let xcap_image = primary
+/// Grabs one frame from `monitor`. `name` is only used to enrich errors.
+fn capture_monitor(monitor: &Monitor, name: &str) -> Result<RgbaImage> {
+    let xcap_image = monitor
         .capture_image()
-        .with_context(|| format!("Hardware capture failed for monitor '{}'", monitor_name))?;
+        .with_context(|| format!("Hardware capture failed for monitor '{name}'"))?;
 
     // Convert xcap's image wrapper into a standard image::DynamicImage
     // This automatically corrects pixel formats, padding, and row strides.
     let dynamic_img: DynamicImage = xcap_image.into();
 
     // Safely extract a perfectly aligned RgbaImage buffer
-    let rgba_buffer = dynamic_img.to_rgba8();
+    Ok(dynamic_img.to_rgba8())
+}
 
-    Ok(CapturedScreen {
-        name: monitor_name,
-        image: rgba_buffer,
-    })
+/// Captures the primary monitor, falling back to the first enumerated
+/// monitor when none is flagged primary.
+pub fn capture_primary_monitor() -> Result<CapturedScreen> {
+    let monitor = primary_monitor()?;
+    let name = monitor.name()?;
+    let image = capture_monitor(&monitor, &name)?;
+
+    Ok(CapturedScreen { name, image })
 }
 
 /// Captures the primary monitor once its output is stable across two
@@ -62,14 +72,19 @@ pub fn capture_primary_monitor() -> Result<CapturedScreen> {
 /// poll until the screen stops changing, with `SETTLE_MAX_WAIT` as the
 /// animated-desktop bail-out (newest frame returned on timeout).
 pub fn capture_settled_monitor() -> Result<CapturedScreen> {
+    let monitor = primary_monitor()?;
+    let name = monitor.name()?;
     let start = Instant::now();
-    let mut previous = capture_primary_monitor()?;
+    let mut previous = capture_monitor(&monitor, &name)?;
 
     loop {
         std::thread::sleep(SETTLE_POLL);
-        let current = capture_primary_monitor()?;
-        if current.image == previous.image || start.elapsed() >= SETTLE_MAX_WAIT {
-            return Ok(current);
+        let current = capture_monitor(&monitor, &name)?;
+        if current == previous || start.elapsed() >= SETTLE_MAX_WAIT {
+            return Ok(CapturedScreen {
+                name,
+                image: current,
+            });
         }
         previous = current;
     }
