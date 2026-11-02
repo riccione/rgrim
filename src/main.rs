@@ -206,6 +206,11 @@ impl eframe::App for DashboardApp {
             ui.vertical_centered(|ui| {
                 ui.heading("📸 rgrim Screen Utility");
                 ui.label("A lightweight, cross-platform sniper annotation engine.");
+                ui.label(
+                    eframe::egui::RichText::new(format!("v{}", rgrim::VERSION))
+                        .color(eframe::egui::Color32::GRAY)
+                        .size(13.0),
+                );
             });
             ui.separator();
 
