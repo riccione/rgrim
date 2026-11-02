@@ -230,7 +230,8 @@ impl eframe::App for SniperOverlay {
 /// Paints the idle-state hint chip at the top of the overlay.
 fn paint_hint(ui: &egui::Ui, content_rect: Rect) {
     let text_color = egui::Color32::from_rgb(230, 235, 245);
-    let font_id = egui::TextStyle::Body.resolve(ui.style());
+    let mut font_id = egui::TextStyle::Body.resolve(ui.style());
+    font_id.size *= 2.0;
     let galley = ui
         .painter()
         .layout_no_wrap(HINT_TEXT.to_owned(), font_id, text_color);
