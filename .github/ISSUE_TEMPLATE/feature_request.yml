@@ -1,0 +1,47 @@
+---
+name: Feature request
+description: A capability rgrim is missing.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting improvements to `rgrim`! rgrim is a screenshot
+        sniper with a command-line mode, a dashboard, and an annotation editor.
+        Please check the
+        [latest release](https://github.com/riccione/rgrim/releases) and
+        existing issues first. The most useful requests explain the use case
+        clearly and describe how you imagine using the feature.
+
+  - type: textarea
+    id: capability
+    attributes:
+      label: What is missing
+      description: What you are trying to accomplish, and what stops you from doing it today.
+    validations:
+      required: true
+
+  - type: input
+    id: cli-equivalent
+    attributes:
+      label: Suggested command or flag syntax
+      description: How you imagine invoking this feature.
+
+  - type: textarea
+    id: behaviour
+    attributes:
+      label: How it should behave
+      description: |
+        Details on expected output, configuration changes, subcommands, flags,
+        or how it integrates with existing workflows.
+
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Which parts does this affect?
+      options:
+        - label: Capture / sniper selection
+        - label: Editor / annotation tools
+        - label: Dashboard or CLI
+        - label: Export / clipboard / file naming
+        - label: Packaging or platform support

@@ -1,0 +1,9 @@
+---
+blank_issues_enabled: false
+contact_links:
+  - name: Latest release
+    url: https://github.com/riccione/rgrim/releases
+    about: Confirm you are on the newest build before filing.
+  - name: Documentation
+    url: https://github.com/riccione/rgrim#readme
+    about: Setup, command-line flags, and keybindings.
