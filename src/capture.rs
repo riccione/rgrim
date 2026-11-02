@@ -3,7 +3,7 @@
 use std::time::{Duration, Instant};
 
 use anyhow::{Context, Result, anyhow};
-use image::{DynamicImage, RgbaImage};
+use image::RgbaImage;
 use xcap::Monitor;
 
 /// Poll interval while waiting for the compositor to settle (~2.5 frames
@@ -42,16 +42,10 @@ fn primary_monitor() -> Result<Monitor> {
 
 /// Grabs one frame from `monitor`. `name` is only used to enrich errors.
 fn capture_monitor(monitor: &Monitor, name: &str) -> Result<RgbaImage> {
-    let xcap_image = monitor
+    // xcap already yields a tightly packed RGBA buffer at native resolution.
+    monitor
         .capture_image()
-        .with_context(|| format!("Hardware capture failed for monitor '{name}'"))?;
-
-    // Convert xcap's image wrapper into a standard image::DynamicImage
-    // This automatically corrects pixel formats, padding, and row strides.
-    let dynamic_img: DynamicImage = xcap_image.into();
-
-    // Safely extract a perfectly aligned RgbaImage buffer
-    Ok(dynamic_img.to_rgba8())
+        .with_context(|| format!("Hardware capture failed for monitor '{name}'"))
 }
 
 /// Captures the primary monitor, falling back to the first enumerated
