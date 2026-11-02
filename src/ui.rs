@@ -7,6 +7,10 @@ use eframe::egui::{
 use image::RgbaImage;
 use std::sync::{Arc, Mutex};
 
+/// On-screen hint. It is painted by the overlay only, so it never reaches a
+/// captured image: the background is grabbed before this window opens.
+const HINT_TEXT: &str = "Drag to select a region · Enter: full screen · Esc / Q: cancel";
+
 /// Runs the full-screen sniper overlay.
 /// Returns the selected region in physical pixels, or `None` if cancelled.
 /// An `Err` means the overlay failed to start or run (e.g. no display).
@@ -208,6 +212,10 @@ impl eframe::App for SniperOverlay {
                         });
                 }
 
+                if self.selection_start.is_none() && self.current_selection.is_none() {
+                    paint_hint(ui, content_rect);
+                }
+
                 // Permanent blue border — drawn last so it renders on top of everything
                 ui.painter().rect_stroke(
                     content_rect,
@@ -217,4 +225,28 @@ impl eframe::App for SniperOverlay {
                 );
             });
     }
+}
+
+/// Paints the idle-state hint chip at the top of the overlay.
+fn paint_hint(ui: &egui::Ui, content_rect: Rect) {
+    let text_color = egui::Color32::from_rgb(230, 235, 245);
+    let font_id = egui::TextStyle::Body.resolve(ui.style());
+    let galley = ui
+        .painter()
+        .layout_no_wrap(HINT_TEXT.to_owned(), font_id, text_color);
+
+    let padding = egui::vec2(12.0, 6.0);
+    let size = galley.size() + padding * 2.0;
+    let center = egui::pos2(
+        content_rect.center().x,
+        content_rect.top() + 16.0 + size.y / 2.0,
+    );
+    let chip = Rect::from_center_size(center, size);
+
+    ui.painter().rect_filled(
+        chip,
+        CornerRadius::same(8),
+        egui::Color32::from_black_alpha(170),
+    );
+    ui.painter().galley(chip.min + padding, galley, text_color);
 }
