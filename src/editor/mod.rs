@@ -316,6 +316,10 @@ impl eframe::App for EditorApp {
             .show(ui, |ui| {
                 let available = ui.available_size();
                 let img_size = self.texture.size_vec2();
+                if !(img_size.x > 0.0 && img_size.y > 0.0 && available.x > 0.0 && available.y > 0.0)
+                {
+                    return;
+                }
                 let scale = (available.x / img_size.x)
                     .min(available.y / img_size.y)
                     .min(1.0);
@@ -376,9 +380,12 @@ impl eframe::App for EditorApp {
 }
 
 fn screen_to_image(screen_pos: Pos2, image_rect: Rect) -> Pos2 {
+    // A collapsed canvas would divide by zero; callers bail out first, but
+    // keep the mapping finite regardless (NaN survives `.clamp()`).
+    let size = image_rect.size().max(Vec2::splat(1.0));
     Pos2::new(
-        ((screen_pos.x - image_rect.min.x) / image_rect.width()).clamp(0.0, 1.0),
-        ((screen_pos.y - image_rect.min.y) / image_rect.height()).clamp(0.0, 1.0),
+        ((screen_pos.x - image_rect.min.x) / size.x).clamp(0.0, 1.0),
+        ((screen_pos.y - image_rect.min.y) / size.y).clamp(0.0, 1.0),
     )
 }
 
@@ -409,5 +416,51 @@ fn paint_stroke(ui: &mut egui::Ui, stroke: &Stroke, image_rect: Rect) {
     for p2 in points {
         ui.painter().line_segment([p1, p2], egui_stroke);
         p1 = p2;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::screen_to_image;
+    use eframe::egui::{Pos2, Rect};
+
+    fn rect(min: Pos2, max: Pos2) -> Rect {
+        Rect::from_min_max(min, max)
+    }
+
+    #[test]
+    fn maps_corners_and_center_of_the_canvas() {
+        let r = rect(Pos2::new(10.0, 20.0), Pos2::new(110.0, 120.0));
+
+        assert_eq!(
+            screen_to_image(Pos2::new(60.0, 70.0), r),
+            Pos2::new(0.5, 0.5)
+        );
+        assert_eq!(screen_to_image(Pos2::new(10.0, 20.0), r), Pos2::ZERO);
+        assert_eq!(
+            screen_to_image(Pos2::new(110.0, 120.0), r),
+            Pos2::new(1.0, 1.0)
+        );
+    }
+
+    #[test]
+    fn clamps_points_outside_the_canvas() {
+        let r = rect(Pos2::new(0.0, 0.0), Pos2::new(100.0, 100.0));
+
+        assert_eq!(
+            screen_to_image(Pos2::new(-50.0, 150.0), r),
+            Pos2::new(0.0, 1.0)
+        );
+    }
+
+    #[test]
+    fn collapsed_canvas_stays_finite() {
+        let r = rect(Pos2::new(5.0, 5.0), Pos2::new(5.0, 5.0));
+
+        let p = screen_to_image(Pos2::new(5.0, 5.0), r);
+
+        assert!(p.x.is_finite() && p.y.is_finite(), "{p:?}");
+        assert!((0.0..=1.0).contains(&p.x));
+        assert!((0.0..=1.0).contains(&p.y));
     }
 }

@@ -106,6 +106,10 @@ impl eframe::App for SniperOverlay {
                     return;
                 }
 
+                if !content_rect.is_positive() {
+                    return;
+                }
+
                 ui.painter().image(
                     self.texture.id(),
                     content_rect,
