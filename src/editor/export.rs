@@ -46,8 +46,13 @@ pub(crate) fn copy_to_clipboard(image: &RgbaImage) -> Result<()> {
              If on a pure Wayland compositor, ensure 'wl-clipboard' is installed",
         )?;
 
-    if let Some(mut stdin) = child.stdin.take() {
-        stdin.write_all(&png_bytes)?;
+    if let Some(mut stdin) = child.stdin.take()
+        && let Err(error) = stdin.write_all(&png_bytes)
+    {
+        drop(stdin);
+        let _ = child.kill();
+        let _ = child.wait();
+        return Err(error).context("Failed to send PNG to 'wl-copy'");
     }
 
     let wl_status = child.wait()?;
