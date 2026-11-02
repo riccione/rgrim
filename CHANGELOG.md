@@ -4,6 +4,35 @@ All notable changes to `rgrim` will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.1] - 2026-11-02
+
+### Bug Fixes
+
+- Guard degenerate viewport and image geometry
+- *(export)* Reap wl-copy when the PNG write fails
+
+### Documentation
+
+- Document --version
+- Add bug and feature issue templates
+- Add crate-level documentation
+
+### Features
+
+- *(cli)* Add --version
+- *(ui)* Show the app version in the dashboard and editor
+- *(ui)* Show sniper mode hints
+- *(ui)* Double the sniper hint text size
+
+### Performance
+
+- *(capture)* Resolve the monitor once while settling frames
+- *(capture)* Use xcap's RgbaImage without a DynamicImage roundtrip
+
+### Refactoring
+
+- *(dashboard)* Move the dashboard window into the library
+- Apply window styling at window creation
 ## [0.5.0] - 2026-10-31
 
 ### Documentation
