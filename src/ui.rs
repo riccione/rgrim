@@ -34,6 +34,7 @@ pub fn run_sniper_overlay(background: &RgbaImage) -> Result<Option<Rect>> {
         "rgrim-sniper",
         native_options,
         Box::new(move |cc| {
+            crate::style::apply_font_scale(&cc.egui_ctx, 1.2);
             let app = SniperOverlay::new(
                 &cc.egui_ctx,
                 color_image,
@@ -67,7 +68,6 @@ impl SniperOverlay {
         image_height: f32,
         result: Arc<Mutex<Option<Rect>>>,
     ) -> Self {
-        crate::style::apply_font_scale(ctx, 1.2);
         let texture = ctx.load_texture("background_image", color_image, TextureOptions::default());
 
         Self {

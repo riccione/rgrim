@@ -85,6 +85,7 @@ pub fn run_editor(
         "rgrim-editor",
         native_options,
         Box::new(move |cc| {
+            init_editor_style(&cc.egui_ctx);
             Ok(Box::new(EditorApp::new(
                 &cc.egui_ctx,
                 image,
@@ -101,6 +102,15 @@ pub fn run_editor(
         Some(delay) => Ok((EditorOutcome::NewCapture { delay }, exit.palette)),
         None => Ok((EditorOutcome::Closed, exit.palette)),
     }
+}
+
+/// Applies the editor window's dark visuals and font scale. Runs once per
+/// window, before the app is constructed.
+fn init_editor_style(ctx: &egui::Context) {
+    let mut visuals = egui::Visuals::dark();
+    visuals.window_corner_radius = egui::CornerRadius::from(8);
+    ctx.set_visuals(visuals);
+    crate::style::apply_font_scale(ctx, 1.2);
 }
 
 /// Annotation editor window: pen/highlighter toolbar over the crop
@@ -133,11 +143,6 @@ impl EditorApp {
         palette: ToolPalette,
         exit: Arc<Mutex<EditorExit>>,
     ) -> Self {
-        let mut visuals = egui::Visuals::dark();
-        visuals.window_corner_radius = egui::CornerRadius::from(8);
-        ctx.set_visuals(visuals);
-        crate::style::apply_font_scale(ctx, 1.2);
-
         let size = [img.width() as usize, img.height() as usize];
         let color_image = ColorImage::from_rgba_unmultiplied(size, img.as_raw());
         let texture = ctx.load_texture("editor_image", color_image, TextureOptions::default());
