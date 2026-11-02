@@ -1,0 +1,90 @@
+---
+name: Bug report
+description: Something in rgrim behaves differently from what you expected.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug! Please check the
+        [latest release](https://github.com/riccione/rgrim/releases) first - the
+        issue may already be fixed. `rgrim --version` reports the build you are
+        running.
+
+  - type: checkboxes
+    id: latest-release
+    attributes:
+      label: Before filing
+      options:
+        - label: I verified this reproduces on the latest release from the GitHub Releases page
+          required: true
+
+  - type: textarea
+    id: what-happens
+    attributes:
+      label: What happens
+      description: What did you do, and what rgrim did in response (including any errors).
+      placeholder: |
+        1. Ran `rgrim`
+        2. Received an error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected instead
+      description: Describe what should have happened.
+      placeholder: "It should capture a screenshot."
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: rgrim version
+      description: |
+        Output of `rgrim --version` (also shown at the top of the dashboard and
+        in the editor toolbar). If you built from source, include the commit
+        hash (`git rev-parse --short HEAD`).
+      placeholder: "rgrim 0.5.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - macOS (Apple Silicon)
+        - macOS (Intel)
+        - Windows
+        - Linux
+    validations:
+      required: true
+
+  - type: input
+    id: os-version
+    attributes:
+      label: OS version
+      placeholder: "macOS 15.2 / Windows 11 24H2 / Ubuntu 24.04"
+
+  - type: dropdown
+    id: installation-method
+    attributes:
+      label: How did you install rgrim?
+      options:
+        - Pre-built binary (GitHub Releases)
+        - Built from source
+    validations:
+      required: true
+
+  - type: textarea
+    id: console
+    attributes:
+      label: Terminal output
+      description: |
+        Paste the command you ran and its full output (stdout and stderr).
+        rgrim has no debug-logging flag; error messages and the per-second
+        capture countdown are the useful signals.
+      render: text

@@ -92,6 +92,7 @@ For platform-specific build requirements, consult the project's documentation.
 | `--gui` / `-g` | Open the dashboard window instead of starting a capture immediately |
 | `--delay <SECONDS>` / `-d <SECONDS>` | Wait before the first capture, e.g. `rgrim --delay 3` or `rgrim --delay=5`. A per-second countdown is printed while waiting. Only the first capture is delayed this way; later captures use the dashboard or editor delay buttons |
 | `--help` / `-h` | Print usage |
+| `--version` / `-V` | Print the app version |
 
 The dashboard's capture buttons choose the delay per click: **Take Screenshot Now**, **Capture in 3 s**, and **Capture in 5 s** (`--delay` applies to non-GUI runs). The editor toolbar mirrors this with **In 3 s** and **In 5 s** re-capture buttons.
 

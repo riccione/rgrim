@@ -16,7 +16,8 @@ Usage: rgrim [OPTIONS]
 Options:
   -g, --gui              Open the dashboard instead of capturing immediately
   -d, --delay <SECONDS>  Wait SECONDS before the first capture (e.g. --delay 3)
-  -h, --help             Print this help";
+  -h, --help             Print this help
+  -V, --version          Print version";
 
 /// Parsed command-line options.
 struct Cli {
@@ -28,6 +29,7 @@ struct Cli {
 enum Parsed {
     Run(Cli),
     Help,
+    Version,
 }
 
 fn main() -> Result<()> {
@@ -35,6 +37,10 @@ fn main() -> Result<()> {
         Parsed::Run(cli) => cli,
         Parsed::Help => {
             println!("{USAGE}");
+            return Ok(());
+        }
+        Parsed::Version => {
+            println!("rgrim {}", rgrim::VERSION);
             return Ok(());
         }
     };
@@ -59,6 +65,7 @@ fn parse_args(args: impl IntoIterator<Item = String>) -> Result<Parsed> {
         match arg.as_str() {
             "--gui" | "-g" => cli.gui = true,
             "--help" | "-h" => return Ok(Parsed::Help),
+            "--version" | "-V" => return Ok(Parsed::Version),
             "--delay" | "-d" => {
                 let value = args.next().context("--delay expects a number of seconds")?;
                 cli.delay = parse_seconds(&value)?;
@@ -199,6 +206,11 @@ impl eframe::App for DashboardApp {
             ui.vertical_centered(|ui| {
                 ui.heading("📸 rgrim Screen Utility");
                 ui.label("A lightweight, cross-platform sniper annotation engine.");
+                ui.label(
+                    eframe::egui::RichText::new(format!("v{}", rgrim::VERSION))
+                        .color(eframe::egui::Color32::GRAY)
+                        .size(13.0),
+                );
             });
             ui.separator();
 
@@ -250,6 +262,7 @@ mod tests {
         match parse_args(args.iter().map(|arg| arg.to_string())).expect("valid arguments") {
             Parsed::Run(cli) => cli,
             Parsed::Help => panic!("expected Run, got Help"),
+            Parsed::Version => panic!("expected Run, got Version"),
         }
     }
 
@@ -294,5 +307,14 @@ mod tests {
         let parsed = parse_args(["--help".to_string()]).expect("help parses");
 
         assert!(matches!(parsed, Parsed::Help));
+    }
+
+    #[test]
+    fn version_flags_short_circuit() {
+        for flag in ["-V", "--version"] {
+            let parsed = parse_args([flag.to_string()]).expect("version parses");
+
+            assert!(matches!(parsed, Parsed::Version), "{flag}");
+        }
     }
 }

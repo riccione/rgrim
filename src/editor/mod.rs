@@ -282,6 +282,14 @@ impl eframe::App for EditorApp {
                             Err(e) => self.set_status(&ctx, format!("Save failed: {}", e)),
                         }
                     }
+
+                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                        ui.label(
+                            egui::RichText::new(format!("v{}", crate::VERSION))
+                                .weak()
+                                .small(),
+                        );
+                    });
                 });
             });
 
