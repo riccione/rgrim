@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   ci:
-    uses: riccione/github-workflows/.github/workflows/rust-ci.yml@33cbfb94288b4cc23e1817e52e9d81a9b2774ff0
+    uses: riccione/github-workflows/.github/workflows/rust-ci.yml@7ed8a722bf3860061e17c1b84d0e1cf3a5a2fb5d
     with:
       apt_packages: >-
         pkg-config
