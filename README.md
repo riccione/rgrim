@@ -26,39 +26,86 @@ Designed for Linux (X11 and Wayland), macOS, and Windows.
 - **Cross-platform:** Works on Linux, macOS, and Windows.
 
 ---
-
 ## Installation
 
-There are two ways to install `rgrim`: download a prebuilt binary or build it from source.
+### Download a prebuilt binary
 
-### Option 1: Download a prebuilt binary (Recommended)
+The easiest way to install `rgrim` is to download a prebuilt binary from [GitHub Releases](https://github.com/riccione/rgrim/releases).
 
-Download the latest release for your operating system and architecture from [GitHub Releases](https://github.com/riccione/rgrim/releases).
+Choose the binary matching your operating system and architecture:
 
-1. Open [GitHub Releases](https://github.com/riccione/rgrim/releases).
-2. Select the latest release.
-3. Download the archive matching your operating system and architecture.
-4. Extract the archive and run the `rgrim` executable.
+| Platform | Architecture | Download |
+|---|---|---|
+| Linux | x86_64 | [rgrim_linux-x86_64](https://github.com/riccione/rgrim/releases/latest/download/rgrim_linux-x86_64) |
+| macOS | Apple Silicon (ARM64) | [rgrim_macos-arm64](https://github.com/riccione/rgrim/releases/latest/download/rgrim_macos-arm64) |
+| macOS | Intel (x86_64) | [rgrim_macos-x86_64](https://github.com/riccione/rgrim/releases/latest/download/rgrim_macos-x86_64) |
+| Windows | x86_64 | [rgrim_win-x86_64.exe](https://github.com/riccione/rgrim/releases/latest/download/rgrim_win-x86_64.exe) |
 
-On Linux, you may need to make the downloaded binary executable:
+#### Linux
+
+**Requirements:** x86_64 Linux with glibc 2.39 or later.
+
+The prebuilt binary is dynamically linked against glibc and is not compatible with musl-based distributions such as Alpine Linux.
+
+Download `rgrim_linux-x86_64`, make it executable, and run it:
 
 ```bash
-chmod +x rgrim
-./rgrim
+chmod +x rgrim_linux-x86_64
+./rgrim_linux-x86_64
 ```
 
-### Option 2: Build from source
+#### macOS
 
-Building from source requires a working Rust development environment and platform-specific dependencies.
+Download the binary matching your processor and make it executable:
 
-**Prerequisites:**
+```bash
+chmod +x rgrim_macos-arm64
+./rgrim_macos-arm64
+```
 
-- [Rust toolchain](https://www.rust-lang.org/tools/install) (including Cargo).
-- Required development libraries for your operating system.
+For Intel Macs, use `rgrim_macos-x86_64` instead.
 
-**Linux dependencies:**
+If macOS blocks the application, allow it under **System Settings → Privacy & Security**.
 
-On Debian/Ubuntu-based distributions:
+#### Windows
+
+Download `rgrim_win-x86_64.exe` and run it directly or from PowerShell:
+
+```powershell
+.\rgrim_win-x86_64.exe
+```
+
+### Verify checksums
+
+Each release includes a `SHA256SUMS` file containing checksums for the release binaries.
+
+Download `SHA256SUMS` and the binary you want to verify into the same directory.
+
+**Linux:**
+
+```bash
+sha256sum -c SHA256SUMS
+```
+
+**macOS:**
+
+```bash
+shasum -a 256 -c SHA256SUMS
+```
+
+**Windows (PowerShell):**
+
+```powershell
+Get-FileHash .\rgrim_win-x86_64.exe -Algorithm SHA256
+```
+
+Compare the resulting hash with the corresponding entry in `SHA256SUMS`.
+
+### Build from source
+
+Building from source requires a working [Rust toolchain](https://www.rust-lang.org/tools/install), including Cargo, and platform-specific dependencies.
+
+On Debian/Ubuntu, install the required Linux dependencies:
 
 ```bash
 sudo apt update
@@ -67,7 +114,7 @@ sudo apt install -y \
     libxkbcommon-dev libdbus-1-dev wl-clipboard
 ```
 
-**Build:**
+Clone the repository and build:
 
 ```bash
 git clone https://github.com/riccione/rgrim.git
@@ -75,13 +122,7 @@ cd rgrim
 cargo build --release
 ```
 
-The compiled executable will be available at:
-
-```text
-target/release/rgrim
-```
-
-For platform-specific build requirements, consult the project's documentation.
+The compiled executable will be available at `target/release/rgrim`.
 
 ---
 
