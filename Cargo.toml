@@ -2,7 +2,6 @@
 name = "rgrim"
 version = "0.5.1"
 edition = "2024"
-homepage = "https://github.com/riccione/rgrim"
 documentation = "https://github.com/riccione/rgrim"
 repository = "https://github.com/riccione/rgrim"
 
